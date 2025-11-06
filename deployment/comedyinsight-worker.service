@@ -1,0 +1,27 @@
+[Unit]
+Description=ComedyInsight View Distribution Worker
+After=network.target redis-server.service postgresql.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=comedyinsight
+WorkingDirectory=/opt/comedyinsight/server
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/comedyinsight/.env
+
+ExecStart=/usr/bin/node dist/worker.js
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=comedyinsight-worker
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+

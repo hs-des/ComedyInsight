@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:15
+    container_name: comedyinsight-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+    restart: unless-stopped
+
+  # Node.js Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: comedyinsight-app
+    environment:
+      # Server Configuration
+      PORT: 3000
+      NODE_ENV: development
+      
+      # Database Connection String
+      DATABASE_URL: postgres://postgres:postgres@db:5432/mydatabase
+      
+      # PostgreSQL Database Configuration (for compatibility)
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: mydatabase
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      
+      # JWT Configuration (set your own secret in production)
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      
+      # Admin Dashboard Credentials
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      
+      # Redis Configuration (for BullMQ queues)
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # S3/MinIO Configuration (for video downloads)
+      AWS_S3_ENDPOINT: http://minio:9000
+      AWS_S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: change-me-secure-password
+      AWS_S3_BUCKET: comedyinsight-videos
+      AWS_S3_USE_PATH_STYLE: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  # Redis Service (for BullMQ queues)
+  redis:
+    image: redis:7-alpine
+    container_name: comedyinsight-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+    restart: unless-stopped
+
+  # MinIO S3-Compatible Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: comedyinsight-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # Web Console
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: change-me-secure-password
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - default
+
+  # pgAdmin 4 Web Interface for Database Management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: comedyinsight-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - default
+    restart: unless-stopped
+
+# Named volumes for persistent data
+volumes:
+  pgdata:
+    driver: local
+  pgadmin_data:
+    driver: local
+  minio_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ⚙️ Run Instructions:
+# ⚡ Run Instructions:
+#
+# Build and start all containers:
+#   docker compose up --build
+#
+# After containers start:
+#   - App: http://localhost:3000
+#   - pgAdmin: http://localhost:8080
+#   - MinIO Console: http://localhost:9001 (login: admin / change-me-secure-password)
+#   - MinIO API: http://localhost:9000
+#   - Database host (inside containers): db
+#
+# First-time MinIO setup (create bucket):
+#   docker compose exec minio mc alias set myminio http://localhost:9000 admin change-me-secure-password
+#   docker compose exec minio mc mb myminio/comedyinsight-videos
+#
+# To stop all containers:
+#   docker compose down
+#
+# To stop and remove volumes (clean slate):
+#   docker compose down -v
+#
+# Features included:
+#   - PostgreSQL database for metadata storage
+#   - Redis for BullMQ job queues (video processing, fake views)
+#   - MinIO for S3-compatible video storage
+#   - FFmpeg for automatic video quality transcoding (1440p, 1080p, 720p, 480p, 360p)
+#   - pgAdmin for database management
+#
+# Video Processing:
+#   - Videos are automatically transcoded to multiple quality versions
+#   - Processing happens asynchronously via Redis/BullMQ queues
+#   - All quality variants stored in MinIO and tracked in database
+#
+# Note: Change MINIO_ROOT_PASSWORD and AWS_SECRET_ACCESS_KEY in production!
+

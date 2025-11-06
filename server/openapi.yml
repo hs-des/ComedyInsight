@@ -1,0 +1,1855 @@
+openapi: 3.0.3
+info:
+  title: ComedyInsight API
+  description: |
+    Full-stack mobile application backend API for comedy content insights.
+    
+    ## Features
+    - User authentication with OTP and OAuth
+    - Video content management and streaming
+    - Subscription management
+    - User engagement (favorites, downloads, views)
+    - Admin panel for content management
+    
+  version: 1.0.0
+  contact:
+    name: ComedyInsight Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.comedyinsight.com
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Authentication and authorization endpoints
+  - name: Videos
+    description: Video content management and retrieval
+  - name: Homepage
+    description: Homepage sections and content
+  - name: Favorites
+    description: User favorite videos
+  - name: Downloads
+    description: Video download management
+  - name: Views
+    description: View tracking and analytics
+  - name: Subscriptions
+    description: User subscription management
+  - name: Admin - Videos
+    description: Admin video CRUD operations
+  - name: Admin - Artists
+    description: Admin artist CRUD operations
+  - name: Admin - Categories
+    description: Admin category CRUD operations
+  - name: Admin - Subtitles
+    description: Admin subtitle management
+  - name: Admin - Homepage
+    description: Admin homepage configuration
+  - name: Admin - Ads
+    description: Advertisement management
+  - name: Admin - Fake Views
+    description: View manipulation management
+
+paths:
+  # ========================================================================
+  # AUTHENTICATION ENDPOINTS
+  # ========================================================================
+  /auth/send-otp:
+    post:
+      tags:
+        - Auth
+      summary: Send OTP to phone number
+      description: Send OTP code to the provided phone number for verification
+      operationId: sendOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+              properties:
+                phone:
+                  type: string
+                  pattern: '^\+[1-9]\d{1,14}$'
+                  example: '+1234567890'
+                  description: Phone number in E.164 format
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtpSentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/verify-otp:
+    post:
+      tags:
+        - Auth
+      summary: Verify OTP code
+      description: Verify the OTP code and return JWT tokens
+      operationId: verifyOtp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+                - otp_code
+              properties:
+                phone:
+                  type: string
+                  pattern: '^\+[1-9]\d{1,14}$'
+                  example: '+1234567890'
+                otp_code:
+                  type: string
+                  minLength: 4
+                  maxLength: 10
+                  example: '123456'
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/oauth:
+    post:
+      tags:
+        - Auth
+      summary: OAuth login
+      description: Authenticate via OAuth provider (Google, Apple, Facebook)
+      operationId: oauthLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - access_token
+              properties:
+                provider:
+                  type: string
+                  enum: [google, apple, facebook]
+                  example: google
+                access_token:
+                  type: string
+                  description: OAuth access token from provider
+                id_token:
+                  type: string
+                  description: OpenID Connect ID token (for Apple)
+      responses:
+        '200':
+          description: OAuth authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout user
+      description: Invalidate user session and refresh token
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Logged out successfully'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # VIDEO ENDPOINTS
+  # ========================================================================
+  /videos:
+    get:
+      tags:
+        - Videos
+      summary: List videos
+      description: Get paginated list of videos with optional filters
+      operationId: listVideos
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: category
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by category ID
+        - name: artist
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by artist ID
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in titles and descriptions
+        - name: is_premium
+          in: query
+          schema:
+            type: boolean
+          description: Filter premium/free videos
+        - name: is_featured
+          in: query
+          schema:
+            type: boolean
+          description: Filter featured videos
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [created_at, published_at, views, title]
+            default: published_at
+      responses:
+        '200':
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+
+  /videos/{id}:
+    get:
+      tags:
+        - Videos
+      summary: Get video by ID
+      description: Retrieve single video with full details
+      operationId: getVideo
+      parameters:
+        - $ref: '#/components/parameters/VideoId'
+      responses:
+        '200':
+          description: Video details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /videos/{id}/subtitles:
+    get:
+      tags:
+        - Videos
+      summary: Get video subtitles
+      description: Retrieve available subtitles for a video
+      operationId: getVideoSubtitles
+      parameters:
+        - $ref: '#/components/parameters/VideoId'
+        - name: language
+          in: query
+          schema:
+            type: string
+            pattern: '^[a-z]{2}$'
+          description: Filter by language code (e.g., en, es, fr)
+      responses:
+        '200':
+          description: List of subtitles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubtitleListResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /videos/{id}/manifest:
+    get:
+      tags:
+        - Videos
+      summary: Get video manifest (HLS/DASH)
+      description: Retrieve streaming manifest for adaptive playback
+      operationId: getVideoManifest
+      parameters:
+        - $ref: '#/components/parameters/VideoId'
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [hls, dash]
+            default: hls
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Manifest URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manifest_url:
+                    type: string
+                    format: uri
+                  expires_at:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================================================
+  # HOMEPAGE ENDPOINT
+  # ========================================================================
+  /homepage:
+    get:
+      tags:
+        - Homepage
+      summary: Get homepage content
+      description: Retrieve homepage sections with featured content
+      operationId: getHomepage
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Homepage content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomepageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # FAVORITES ENDPOINTS
+  # ========================================================================
+  /favorites:
+    post:
+      tags:
+        - Favorites
+      summary: Add video to favorites
+      description: Mark a video as favorite for the authenticated user
+      operationId: addFavorite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - video_id
+              properties:
+                video_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Video added to favorites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /user/favorites:
+    get:
+      tags:
+        - Favorites
+      summary: Get user favorites
+      description: Retrieve all favorite videos for authenticated user
+      operationId: getUserFavorites
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of favorite videos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # DOWNLOADS ENDPOINT
+  # ========================================================================
+  /downloads/request:
+    post:
+      tags:
+        - Downloads
+      summary: Request download
+      description: Request download of a video and get presigned URL
+      operationId: requestDownload
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - video_id
+                - quality
+              properties:
+                video_id:
+                  type: string
+                  format: uuid
+                quality:
+                  type: string
+                  enum: [360p, 480p, 720p, 1080p]
+                  example: 720p
+      responses:
+        '201':
+          description: Download URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ========================================================================
+  # VIEWS ENDPOINT
+  # ========================================================================
+  /views:
+    post:
+      tags:
+        - Views
+      summary: Report view
+      description: Record a video view from client
+      operationId: reportView
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - video_id
+              properties:
+                video_id:
+                  type: string
+                  format: uuid
+                watched_seconds:
+                  type: integer
+                  minimum: 0
+                ip_address:
+                  type: string
+                  format: ipv4
+                user_agent:
+                  type: string
+      responses:
+        '201':
+          description: View recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'View recorded'
+                  view_id:
+                    type: string
+                    format: uuid
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ========================================================================
+  # SUBSCRIPTION ENDPOINTS
+  # ========================================================================
+  /subscribe:
+    post:
+      tags:
+        - Subscriptions
+      summary: Create subscription
+      description: Subscribe user to a plan
+      operationId: createSubscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subscription_type
+                - payment_method_id
+              properties:
+                subscription_type:
+                  type: string
+                  enum: [monthly, yearly, lifetime]
+                  example: monthly
+                payment_method_id:
+                  type: string
+                  description: Stripe payment method ID
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+
+  /user/subscription:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get user subscription
+      description: Retrieve current subscription for authenticated user
+      operationId: getUserSubscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionResponse'
+        '404':
+          description: No active subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active:
+                    type: boolean
+                    example: false
+
+  /webhooks/stripe:
+    post:
+      tags:
+        - Subscriptions
+      summary: Stripe webhook
+      description: Handle Stripe webhook events
+      operationId: stripeWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+
+  # ========================================================================
+  # ADMIN - VIDEOS
+  # ========================================================================
+  /admin/videos:
+    get:
+      tags:
+        - Admin - Videos
+      summary: List all videos (Admin)
+      operationId: adminListVideos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of videos with admin data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Admin - Videos
+      summary: Create video (Admin)
+      operationId: adminCreateVideo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoCreateRequest'
+      responses:
+        '201':
+          description: Video created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/videos/{id}:
+    put:
+      tags:
+        - Admin - Videos
+      summary: Update video (Admin)
+      operationId: adminUpdateVideo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VideoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VideoUpdateRequest'
+      responses:
+        '200':
+          description: Video updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Admin - Videos
+      summary: Delete video (Admin)
+      operationId: adminDeleteVideo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VideoId'
+      responses:
+        '204':
+          description: Video deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================================================
+  # ADMIN - ARTISTS
+  # ========================================================================
+  /admin/artists:
+    get:
+      tags:
+        - Admin - Artists
+      summary: List all artists (Admin)
+      operationId: adminListArtists
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of artists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistListResponse'
+
+    post:
+      tags:
+        - Admin - Artists
+      summary: Create artist (Admin)
+      operationId: adminCreateArtist
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArtistCreateRequest'
+      responses:
+        '201':
+          description: Artist created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistResponse'
+
+  /admin/artists/{id}:
+    put:
+      tags:
+        - Admin - Artists
+      summary: Update artist (Admin)
+      operationId: adminUpdateArtist
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArtistId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArtistUpdateRequest'
+      responses:
+        '200':
+          description: Artist updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistResponse'
+
+    delete:
+      tags:
+        - Admin - Artists
+      summary: Delete artist (Admin)
+      operationId: adminDeleteArtist
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArtistId'
+      responses:
+        '204':
+          description: Artist deleted
+
+  # ========================================================================
+  # ADMIN - CATEGORIES
+  # ========================================================================
+  /admin/categories:
+    get:
+      tags:
+        - Admin - Categories
+      summary: List all categories (Admin)
+      operationId: adminListCategories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+
+    post:
+      tags:
+        - Admin - Categories
+      summary: Create category (Admin)
+      operationId: adminCreateCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreateRequest'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+  /admin/categories/{id}:
+    put:
+      tags:
+        - Admin - Categories
+      summary: Update category (Admin)
+      operationId: adminUpdateCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateRequest'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+    delete:
+      tags:
+        - Admin - Categories
+      summary: Delete category (Admin)
+      operationId: adminDeleteCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CategoryId'
+      responses:
+        '204':
+          description: Category deleted
+
+  # ========================================================================
+  # ADMIN - SUBTITLES
+  # ========================================================================
+  /admin/videos/{id}/subtitles:
+    post:
+      tags:
+        - Admin - Subtitles
+      summary: Upload subtitle (Admin)
+      operationId: adminUploadSubtitle
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/VideoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - language
+                - subtitle_url
+              properties:
+                language:
+                  type: string
+                  pattern: '^[a-z]{2}$'
+                  example: en
+                subtitle_url:
+                  type: string
+                  format: uri
+      responses:
+        '201':
+          description: Subtitle uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubtitleResponse'
+
+  # ========================================================================
+  # ADMIN - HOMEPAGE
+  # ========================================================================
+  /admin/homepage/sections:
+    get:
+      tags:
+        - Admin - Homepage
+      summary: List homepage sections (Admin)
+      operationId: adminListHomepageSections
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HomepageSectionResponse'
+
+    post:
+      tags:
+        - Admin - Homepage
+      summary: Create homepage section (Admin)
+      operationId: adminCreateHomepageSection
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - layout_type
+              properties:
+                name:
+                  type: string
+                title:
+                  type: string
+                layout_type:
+                  type: string
+                  enum: [horizontal, vertical, grid, featured]
+                display_order:
+                  type: integer
+                  default: 0
+      responses:
+        '201':
+          description: Section created
+
+  /admin/homepage/sections/{id}/items:
+    post:
+      tags:
+        - Admin - Homepage
+      summary: Add item to section (Admin)
+      operationId: adminAddHomepageItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_type
+              properties:
+                item_type:
+                  type: string
+                  enum: [video, artist, category]
+                video_id:
+                  type: string
+                  format: uuid
+                artist_id:
+                  type: string
+                  format: uuid
+                category_id:
+                  type: string
+                  format: uuid
+                display_order:
+                  type: integer
+                  default: 0
+                is_featured:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          description: Item added
+
+  # ========================================================================
+  # ADMIN - ADS
+  # ========================================================================
+  /admin/ads:
+    get:
+      tags:
+        - Admin - Ads
+      summary: List all ads (Admin)
+      operationId: adminListAds
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of ads
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdResponse'
+
+    post:
+      tags:
+        - Admin - Ads
+      summary: Create ad (Admin)
+      operationId: adminCreateAd
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdCreateRequest'
+      responses:
+        '201':
+          description: Ad created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdResponse'
+
+  /admin/ads/{id}:
+    put:
+      tags:
+        - Admin - Ads
+      summary: Update ad (Admin)
+      operationId: adminUpdateAd
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdUpdateRequest'
+      responses:
+        '200':
+          description: Ad updated
+
+    delete:
+      tags:
+        - Admin - Ads
+      summary: Delete ad (Admin)
+      operationId: adminDeleteAd
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AdId'
+      responses:
+        '204':
+          description: Ad deleted
+
+  # ========================================================================
+  # ADMIN - FAKE VIEWS
+  # ========================================================================
+  /admin/fake-views:
+    post:
+      tags:
+        - Admin - Fake Views
+      summary: Create fake views request (Admin)
+      operationId: adminCreateFakeViewsRequest
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - video_id
+                - request_type
+                - fake_views_count
+              properties:
+                video_id:
+                  type: string
+                  format: uuid
+                request_type:
+                  type: string
+                  enum: [boost, remove, reset]
+                  example: boost
+                fake_views_count:
+                  type: integer
+                  minimum: 1
+                  example: 1000
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FakeViewsResponse'
+
+  /admin/fake-views/{id}:
+    get:
+      tags:
+        - Admin - Fake Views
+      summary: Get fake views request (Admin)
+      operationId: adminGetFakeViewsRequest
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FakeViewsId'
+      responses:
+        '200':
+          description: Request details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FakeViewsResponse'
+
+  /admin/fake-views/{id}/execute:
+    post:
+      tags:
+        - Admin - Fake Views
+      summary: Execute fake views request (Admin)
+      operationId: adminExecuteFakeViewsRequest
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FakeViewsId'
+      responses:
+        '200':
+          description: Request executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  executed_at:
+                    type: string
+                    format: date-time
+
+# ========================================================================
+# COMPONENTS
+# ========================================================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from auth endpoints
+
+  parameters:
+    VideoId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Video UUID
+    ArtistId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Artist UUID
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Category UUID
+    AdId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Ad UUID
+    SectionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Section UUID
+    FakeViewsId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Fake views request UUID
+
+  schemas:
+    # ====================================================================
+    # AUTH SCHEMAS
+    # ====================================================================
+    OtpSentResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 'OTP sent to +1234567890'
+        expires_in:
+          type: integer
+          description: OTP validity in seconds
+          example: 300
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          example: 3600
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        profile_picture_url:
+          type: string
+        is_verified:
+          type: boolean
+
+    # ====================================================================
+    # VIDEO SCHEMAS
+    # ====================================================================
+    VideoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        thumbnail_url:
+          type: string
+        video_url:
+          type: string
+        duration_seconds:
+          type: integer
+        video_type:
+          type: string
+          enum: [short, full, preview]
+        quality:
+          type: string
+          enum: [360p, 480p, 720p, 1080p]
+        is_premium:
+          type: boolean
+        is_featured:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time
+        real_view_count:
+          type: integer
+        visible_view_count:
+          type: integer
+        boosted_view_count:
+          type: integer
+        artists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtistResponse'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VideoListResponse:
+      type: object
+      properties:
+        videos:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoResponse'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    VideoCreateRequest:
+      type: object
+      required:
+        - title
+        - video_url
+        - quality
+        - video_type
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        thumbnail_url:
+          type: string
+        video_url:
+          type: string
+        duration_seconds:
+          type: integer
+        video_type:
+          type: string
+          enum: [short, full, preview]
+        quality:
+          type: string
+          enum: [360p, 480p, 720p, 1080p]
+        is_premium:
+          type: boolean
+          default: false
+        is_featured:
+          type: boolean
+          default: false
+        artist_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        category_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    VideoUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/VideoCreateRequest'
+        - type: object
+          properties:
+            is_active:
+              type: boolean
+            published_at:
+              type: string
+              format: date-time
+
+    SubtitleResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        video_id:
+          type: string
+          format: uuid
+        language:
+          type: string
+        subtitle_url:
+          type: string
+
+    SubtitleListResponse:
+      type: object
+      properties:
+        subtitles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubtitleResponse'
+
+    # ====================================================================
+    # ARTIST SCHEMAS
+    # ====================================================================
+    ArtistResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        bio:
+          type: string
+        profile_image_url:
+          type: string
+        cover_image_url:
+          type: string
+        nationality:
+          type: string
+        is_featured:
+          type: boolean
+
+    ArtistListResponse:
+      type: object
+      properties:
+        artists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtistResponse'
+
+    ArtistCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        bio:
+          type: string
+        profile_image_url:
+          type: string
+        cover_image_url:
+          type: string
+        nationality:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+        is_featured:
+          type: boolean
+          default: false
+
+    ArtistUpdateRequest:
+      $ref: '#/components/schemas/ArtistCreateRequest'
+
+    # ====================================================================
+    # CATEGORY SCHEMAS
+    # ====================================================================
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        parent_id:
+          type: string
+          format: uuid
+        display_order:
+          type: integer
+
+    CategoryListResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+
+    CategoryCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        parent_id:
+          type: string
+          format: uuid
+        display_order:
+          type: integer
+          default: 0
+        is_active:
+          type: boolean
+          default: true
+
+    CategoryUpdateRequest:
+      $ref: '#/components/schemas/CategoryCreateRequest'
+
+    # ====================================================================
+    # HOMEPAGE SCHEMAS
+    # ====================================================================
+    HomepageResponse:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomepageSectionResponse'
+
+    HomepageSectionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        title:
+          type: string
+        layout_type:
+          type: string
+          enum: [horizontal, vertical, grid, featured]
+        display_order:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomepageItemResponse'
+
+    HomepageItemResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        item_type:
+          type: string
+          enum: [video, artist, category]
+        video:
+          $ref: '#/components/schemas/VideoResponse'
+        artist:
+          $ref: '#/components/schemas/ArtistResponse'
+        category:
+          $ref: '#/components/schemas/CategoryResponse'
+
+    # ====================================================================
+    # FAVORITE SCHEMAS
+    # ====================================================================
+    FavoriteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        video_id:
+          type: string
+          format: uuid
+        video:
+          $ref: '#/components/schemas/VideoResponse'
+        created_at:
+          type: string
+          format: date-time
+
+    # ====================================================================
+    # DOWNLOAD SCHEMAS
+    # ====================================================================
+    DownloadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        download_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+        file_size_mb:
+          type: number
+          format: float
+
+    # ====================================================================
+    # SUBSCRIPTION SCHEMAS
+    # ====================================================================
+    SubscriptionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        subscription_type:
+          type: string
+          enum: [monthly, yearly, lifetime]
+        status:
+          type: string
+          enum: [active, expired, cancelled, pending]
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        auto_renew:
+          type: boolean
+
+    # ====================================================================
+    # AD SCHEMAS
+    # ====================================================================
+    AdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        ad_type:
+          type: string
+          enum: [banner, video, interstitial, rewarded]
+        position:
+          type: string
+          enum: [pre_roll, mid_roll, post_roll, sidebar, top_banner]
+        ad_url:
+          type: string
+        image_url:
+          type: string
+        video_url:
+          type: string
+        is_active:
+          type: boolean
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    AdCreateRequest:
+      type: object
+      required:
+        - title
+        - ad_type
+        - position
+        - ad_url
+      properties:
+        title:
+          type: string
+        ad_type:
+          type: string
+          enum: [banner, video, interstitial, rewarded]
+        position:
+          type: string
+          enum: [pre_roll, mid_roll, post_roll, sidebar, top_banner]
+        ad_url:
+          type: string
+        image_url:
+          type: string
+        video_url:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        max_impressions:
+          type: integer
+        max_clicks:
+          type: integer
+
+    AdUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/AdCreateRequest'
+        - type: object
+          properties:
+            is_active:
+              type: boolean
+
+    # ====================================================================
+    # FAKE VIEWS SCHEMAS
+    # ====================================================================
+    FakeViewsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        video_id:
+          type: string
+          format: uuid
+        request_type:
+          type: string
+          enum: [boost, remove, reset]
+        fake_views_count:
+          type: integer
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        executed_at:
+          type: string
+          format: date-time
+
+    # ====================================================================
+    # PAGINATION SCHEMAS
+    # ====================================================================
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        total_pages:
+          type: integer
+          example: 8
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Validation failed'
+              message:
+                type: string
+              details:
+                type: object
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Unauthorized'
+              message:
+                type: string
+                example: 'Authentication required'
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Forbidden'
+              message:
+                type: string
+                example: 'Insufficient permissions'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Not Found'
+              message:
+                type: string
+                example: 'Resource not found'
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Too Many Requests'
+              message:
+                type: string
+                example: 'Rate limit exceeded. Try again later.'
+              retry_after:
+                type: integer
+
+    PaymentRequired:
+      description: Payment required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'Payment Required'
+              message:
+                type: string
+                example: 'Subscription required to access this content'
+

@@ -1,0 +1,24 @@
+{
+  "name": "comedyinsight",
+  "version": "1.0.0",
+  "description": "ComedyInsight - Mobile app with Express backend",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "server"
+  ],
+  "scripts": {
+    "install-all": "yarn install",
+    "mobile": "yarn workspace mobile start",
+    "server": "yarn workspace server dev",
+    "build": "yarn workspace server build",
+    "build:mobile": "yarn workspace mobile build"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
+

@@ -1,0 +1,217 @@
+{
+  "searchVideos": {
+    "videos": [
+      {
+        "id": "1",
+        "title": "Hilarious Stand-up Special",
+        "thumbnail_url": "https://picsum.photos/seed/video1/400/600",
+        "visible_view_count": 1250000,
+        "duration_seconds": 3600,
+        "language": "EN",
+        "rating": 4.5,
+        "artist": "John Comedian",
+        "is_premium": false
+      },
+      {
+        "id": "3",
+        "title": "Late Night Laughs",
+        "thumbnail_url": "https://picsum.photos/seed/video3/400/600",
+        "visible_view_count": 2450000,
+        "duration_seconds": 2700,
+        "language": "EN",
+        "rating": 4.2,
+        "artist": "Mike Laughs",
+        "is_premium": false
+      }
+    ],
+    "total": 2,
+    "page": 1,
+    "limit": 20
+  },
+  "getVideos": {
+    "videos": [
+      {
+        "id": "1",
+        "title": "Hilarious Stand-up Special",
+        "thumbnail_url": "https://picsum.photos/seed/video1/400/600",
+        "visible_view_count": 1250000,
+        "duration_seconds": 3600,
+        "language": "EN",
+        "rating": 4.5,
+        "artist": "John Comedian",
+        "is_premium": false
+      },
+      {
+        "id": "2",
+        "title": "Comedy Central Presents",
+        "thumbnail_url": "https://picsum.photos/seed/video2/400/600",
+        "visible_view_count": 890000,
+        "duration_seconds": 1800,
+        "language": "EN",
+        "rating": 4.8,
+        "artist": "Sarah Funny",
+        "is_premium": true
+      },
+      {
+        "id": "3",
+        "title": "Late Night Laughs",
+        "thumbnail_url": "https://picsum.photos/seed/video3/400/600",
+        "visible_view_count": 2450000,
+        "duration_seconds": 2700,
+        "language": "EN",
+        "rating": 4.2,
+        "artist": "Mike Laughs",
+        "is_premium": false
+      },
+      {
+        "id": "4",
+        "title": "Roast Battle Championship",
+        "thumbnail_url": "https://picsum.photos/seed/video4/400/600",
+        "visible_view_count": 3200000,
+        "duration_seconds": 2400,
+        "language": "EN",
+        "rating": 4.9,
+        "artist": "Various Artists",
+        "is_premium": true
+      },
+      {
+        "id": "5",
+        "title": "Improv Comedy Show",
+        "thumbnail_url": "https://picsum.photos/seed/video5/400/600",
+        "visible_view_count": 678000,
+        "duration_seconds": 3600,
+        "language": "EN",
+        "rating": 4.0,
+        "artist": "The Improv Group",
+        "is_premium": false
+      },
+      {
+        "id": "6",
+        "title": "Funny Moments Compilation",
+        "thumbnail_url": "https://picsum.photos/seed/video6/400/600",
+        "visible_view_count": 1560000,
+        "duration_seconds": 1800,
+        "language": "EN",
+        "rating": 4.3,
+        "artist": "Compilation",
+        "is_premium": false
+      }
+    ],
+    "total": 6,
+    "page": 1,
+    "limit": 20,
+    "has_more": false
+  },
+  "getVideosWithFilters": {
+    "videos": [
+      {
+        "id": "1",
+        "title": "Hilarious Stand-up Special",
+        "thumbnail_url": "https://picsum.photos/seed/video1/400/600",
+        "visible_view_count": 1250000,
+        "duration_seconds": 3600,
+        "language": "EN",
+        "rating": 4.5,
+        "artist": "John Comedian",
+        "is_premium": false
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 20,
+    "filters": {
+      "category": "stand-up",
+      "language": "EN",
+      "min_rating": 4.5,
+      "max_duration": 3600
+    }
+  },
+  "getCategories": {
+    "categories": [
+      {
+        "id": "1",
+        "name": "Stand-up Comedy",
+        "slug": "stand-up",
+        "count": 234,
+        "icon": "🎭",
+        "description": "Classic stand-up performances"
+      },
+      {
+        "id": "2",
+        "name": "Sketch Comedy",
+        "slug": "sketch",
+        "count": 156,
+        "icon": "📺",
+        "description": "Funny sketches and skits"
+      },
+      {
+        "id": "3",
+        "name": "Improv Comedy",
+        "slug": "improv",
+        "count": 89,
+        "icon": "🎪",
+        "description": "Improvisational comedy shows"
+      },
+      {
+        "id": "4",
+        "name": "Comedy Specials",
+        "slug": "specials",
+        "count": 412,
+        "icon": "⭐",
+        "description": "Featured comedy specials"
+      },
+      {
+        "id": "5",
+        "name": "Funny Moments",
+        "slug": "funny-moments",
+        "count": 567,
+        "icon": "😄",
+        "description": "Best funny moments"
+      },
+      {
+        "id": "6",
+        "name": "Roast Battles",
+        "slug": "roast-battles",
+        "count": 78,
+        "icon": "🔥",
+        "description": "Epic roast competitions"
+      }
+    ]
+  },
+  "errorResponses": {
+    "400": {
+      "error": "Bad Request",
+      "message": "Invalid query parameters",
+      "code": "INVALID_QUERY"
+    },
+    "404": {
+      "error": "Not Found",
+      "message": "Resource not found",
+      "code": "NOT_FOUND"
+    },
+    "500": {
+      "error": "Internal Server Error",
+      "message": "An unexpected error occurred",
+      "code": "INTERNAL_ERROR"
+    }
+  },
+  "searchSuggestions": {
+    "suggestions": [
+      "stand-up comedy",
+      "sketch show",
+      "improv",
+      "comedy special",
+      "funny moments"
+    ],
+    "videos": [
+      {
+        "id": "1",
+        "title": "Hilarious Stand-up Special",
+        "thumbnail_url": "https://picsum.photos/seed/video1/400/600",
+        "visible_view_count": 1250000,
+        "artist": "John Comedian"
+      }
+    ]
+  }
+}
+

@@ -1,0 +1,27 @@
+[Unit]
+Description=ComedyInsight API Server
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=comedyinsight
+WorkingDirectory=/opt/comedyinsight/server
+Environment=NODE_ENV=production
+Environment=PORT=3000
+EnvironmentFile=/opt/comedyinsight/.env
+
+ExecStart=/usr/bin/node dist/index.js
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=comedyinsight-api
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+

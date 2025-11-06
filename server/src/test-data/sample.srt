@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:03,000
+Welcome to ComedyInsight!
+
+2
+00:00:03,500 --> 00:00:06,000
+Enjoy your viewing experience
+
+3
+00:00:07,000 --> 00:00:10,500
+We have the best comedy content
+
+4
+00:00:12,000 --> 00:00:15,000
+Don't forget to subscribe
+
+5
+00:00:16,000 --> 00:00:19,000
+And hit that like button!
+
+6
+00:00:20,000 --> 00:00:23,000
+Thanks for watching!
+
