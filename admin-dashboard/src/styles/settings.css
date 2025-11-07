@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .settings-card {
+    @apply bg-gray-800/80 border border-gray-700 rounded-2xl p-6 shadow-xl backdrop-blur;
+  }
+
+  .settings-card-header {
+    @apply flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6;
+  }
+
+  .settings-card-title {
+    @apply text-xl font-semibold text-white;
+  }
+
+  .settings-card-subtitle {
+    @apply text-sm text-gray-400;
+  }
+
+  .settings-section-title {
+    @apply text-lg font-semibold text-white;
+  }
+
+  .settings-tabs {
+    @apply flex flex-wrap gap-3 border-b border-gray-800 pb-3;
+  }
+
+  .settings-tab {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800/60 text-gray-400 border border-gray-700/60 transition-all hover:text-white hover:border-gray-600;
+  }
+
+  .settings-tab--active {
+    @apply bg-gray-900 text-white border-primary/80 shadow-lg shadow-primary/10;
+  }
+
+  .settings-form-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+  }
+
+  .settings-label {
+    @apply block text-sm font-medium text-gray-300 mb-2;
+  }
+
+  .settings-input {
+    @apply w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40 transition;
+  }
+
+  .settings-error {
+    @apply mt-2 text-xs text-red-400;
+  }
+
+  .settings-status {
+    @apply flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-3 mb-6 text-sm text-gray-300;
+  }
+
+  .settings-notification-grid {
+    @apply flex flex-wrap gap-4;
+  }
+
+  .settings-checkbox {
+    @apply flex items-center gap-3 bg-gray-900/60 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-300;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 border border-gray-700 text-gray-200 px-4 py-2.5 rounded-lg text-sm font-medium hover:border-gray-500 hover:text-white transition disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  table thead th {
+    @apply font-medium;
+  }
+
+  html[data-theme='light'] .settings-card {
+    @apply bg-white/90 border-borderLight text-slate-900 shadow-lg;
+  }
+
+  html[data-theme='light'] .settings-card-title,
+  html[data-theme='light'] .settings-section-title {
+    @apply text-slate-900;
+  }
+
+  html[data-theme='light'] .settings-card-subtitle,
+  html[data-theme='light'] .settings-label,
+  html[data-theme='light'] .settings-status,
+  html[data-theme='light'] .settings-checkbox {
+    @apply text-slate-600;
+  }
+
+  html[data-theme='light'] .settings-input {
+    @apply bg-white border-borderLight text-slate-900 placeholder-slate-400;
+  }
+
+  html[data-theme='light'] .settings-tab {
+    @apply bg-white border-borderLight text-slate-600 hover:border-primary/60 hover:text-primary;
+  }
+
+  html[data-theme='light'] .settings-tab--active {
+    @apply bg-primary/10 text-primary border-primary;
+  }
+
+  html[data-theme='light'] .btn-secondary {
+    @apply border-borderLight text-slate-600 hover:border-primary/60 hover:text-primary;
+  }
+}
+

@@ -1,180 +1,254 @@
-version: '3.8'
+version: "3.9"
+
+x-healthcheck-defaults: &health_defaults
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 10s
 
 services:
-  # PostgreSQL Database Service
-  db:
+  postgres:
     image: postgres:15
-    container_name: comedyinsight-db
+    container_name: comedyinsight-postgres
+    restart: unless-stopped
+    profiles: ["dev", "prod"]
+    env_file: .env
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: mydatabase
+      POSTGRES_DB: comedyinsight
     ports:
-      - "5432:5432"
+      - "5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/healthchecks:/opt/healthchecks:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "/bin/sh", "/opt/healthchecks/postgres-healthcheck.sh"]
+      <<: *health_defaults
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    container_name: comedyinsight-redis
+    restart: unless-stopped
+    profiles: ["dev", "prod"]
+    env_file: .env
+    command: >
+      sh -c 'if [ -n "redis123" ]; then
+        redis-server --save 60 1 --loglevel warning --requirepass "redis123";
+      else
+        redis-server --save 60 1 --loglevel warning;
+      fi'
+    ports:
+      - "6379"
+    volumes:
+      - redis_data:/data
+      - ./scripts/healthchecks:/opt/healthchecks:ro
+    healthcheck:
+      test: ["CMD", "/bin/sh", "/opt/healthchecks/redis-healthcheck.sh"]
+      <<: *health_defaults
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+  minio:
+    image: minio/minio:latest
+    container_name: comedyinsight-minio
+    restart: unless-stopped
+    profiles: ["dev", "prod"]
+    command: server /data --console-address "9001"
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000"
+      - "9001"
+    volumes:
+      - minio_data:/data
+      - ./scripts/healthchecks:/opt/healthchecks:ro
+    healthcheck:
+      test: ["CMD", "/bin/sh", "/opt/healthchecks/minio-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
       retries: 5
     networks:
-      - default
-    restart: unless-stopped
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
-  # Node.js Application Service
-  app:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: comedyinsight-app
+    container_name: comedyinsight-api
+    restart: unless-stopped
+    profiles: ["dev", "prod"]
+    env_file: .env
     environment:
-      # Server Configuration
-      PORT: 3000
-      NODE_ENV: development
-      
-      # Database Connection String
-      DATABASE_URL: postgres://postgres:postgres@db:5432/mydatabase
-      
-      # PostgreSQL Database Configuration (for compatibility)
-      DB_HOST: db
+      PORT: ${API_PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/comedyinsight
+      DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: mydatabase
+      DB_NAME: comedyinsight
       DB_USER: postgres
       DB_PASSWORD: postgres
-      
-      # JWT Configuration (set your own secret in production)
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      
-      # Admin Dashboard Credentials
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin
-      
-      # Redis Configuration (for BullMQ queues)
       REDIS_HOST: redis
       REDIS_PORT: 6379
-
-      # S3/MinIO Configuration (for video downloads)
+      REDIS_PASSWORD: redis123
       AWS_S3_ENDPOINT: http://minio:9000
       AWS_S3_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: admin
-      AWS_SECRET_ACCESS_KEY: change-me-secure-password
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
       AWS_S3_BUCKET: comedyinsight-videos
       AWS_S3_USE_PATH_STYLE: "true"
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin123
+      JWT_SECRET: adminjwt
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      ML_SERVICE_URL: http://ml-service:8000
     ports:
-      - "3000:3000"
+      - "${API_PORT:-3000}:3000"
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       minio:
         condition: service_healthy
-    networks:
-      - default
-    restart: unless-stopped
-
-  # Redis Service (for BullMQ queues)
-  redis:
-    image: redis:7-alpine
-    container_name: comedyinsight-redis
-    ports:
-      - "6379:6379"
+      ml-service:
+        condition: service_healthy
     volumes:
-      - redis_data:/data
+      - api_uploads:/app/uploads
+      - ./scripts:/opt/docker-tools:ro
+      - ./scripts/healthchecks:/opt/healthchecks:ro
+    entrypoint: ["/bin/sh", "/opt/docker-tools/wait-for-deps.sh", "postgres:5432", "redis:6379", "minio:9000", "ml-service:8000", "--", "npm start"]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "/bin/sh", "/opt/healthchecks/api-healthcheck.sh"]
+      <<: *health_defaults
     networks:
-      - default
-    restart: unless-stopped
+      - backend
+      - frontend
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2g
+        reservations:
+          cpus: "0.5"
+          memory: 512M
 
-  # MinIO S3-Compatible Object Storage
-  minio:
-    image: minio/minio:latest
-    container_name: comedyinsight-minio
+  dashboard:
+    build:
+      context: ./admin-dashboard
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://api:3000}
+    container_name: comedyinsight-dashboard
     restart: unless-stopped
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"  # S3 API
-      - "9001:9001"  # Web Console
-    volumes:
-      - minio_data:/data
+    profiles: ["dev"]
+    env_file: .env
     environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: change-me-secure-password
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-4173}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    ports:
+      - "${DASHBOARD_PORT:-4173}:4173"
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./scripts/healthchecks:/opt/healthchecks:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      test: ["CMD", "/bin/sh", "/opt/healthchecks/dashboard-healthcheck.sh"]
+      <<: *health_defaults
     networks:
-      - default
+      - frontend
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
 
-  # pgAdmin 4 Web Interface for Database Management
+  ml-service:
+    build:
+      context: ./ml-service
+    container_name: comedyinsight-ml
+    restart: unless-stopped
+    profiles: ["dev", "prod"]
+    env_file: .env
+    environment:
+      ML_SERVICE_PORT: ${ML_SERVICE_PORT:-8000}
+    expose:
+      - "8000"
+    ports:
+      - "${ML_SERVICE_PORT:-8000}:8000"
+    volumes:
+      - ./scripts/healthchecks:/opt/healthchecks:ro
+    healthcheck:
+      test: ["CMD", "/bin/sh", "/opt/healthchecks/ml-healthcheck.sh"]
+      <<: *health_defaults
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: comedyinsight-pgadmin
+    restart: unless-stopped
+    profiles: ["dev"]
+    env_file: .env
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@local.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "8080:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
     depends_on:
-      - db
+      postgres:
+        condition: service_healthy
     networks:
-      - default
-    restart: unless-stopped
+      - backend
+      - frontend
 
-# Named volumes for persistent data
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+
 volumes:
-  pgdata:
-    driver: local
-  pgadmin_data:
-    driver: local
-  minio_data:
-    driver: local
+  postgres_data:
   redis_data:
-    driver: local
-
-# ⚙️ Run Instructions:
-# ⚡ Run Instructions:
-#
-# Build and start all containers:
-#   docker compose up --build
-#
-# After containers start:
-#   - App: http://localhost:3000
-#   - pgAdmin: http://localhost:8080
-#   - MinIO Console: http://localhost:9001 (login: admin / change-me-secure-password)
-#   - MinIO API: http://localhost:9000
-#   - Database host (inside containers): db
-#
-# First-time MinIO setup (create bucket):
-#   docker compose exec minio mc alias set myminio http://localhost:9000 admin change-me-secure-password
-#   docker compose exec minio mc mb myminio/comedyinsight-videos
-#
-# To stop all containers:
-#   docker compose down
-#
-# To stop and remove volumes (clean slate):
-#   docker compose down -v
-#
-# Features included:
-#   - PostgreSQL database for metadata storage
-#   - Redis for BullMQ job queues (video processing, fake views)
-#   - MinIO for S3-compatible video storage
-#   - FFmpeg for automatic video quality transcoding (1440p, 1080p, 720p, 480p, 360p)
-#   - pgAdmin for database management
-#
-# Video Processing:
-#   - Videos are automatically transcoded to multiple quality versions
-#   - Processing happens asynchronously via Redis/BullMQ queues
-#   - All quality variants stored in MinIO and tracked in database
-#
-# Note: Change MINIO_ROOT_PASSWORD and AWS_SECRET_ACCESS_KEY in production!
-
+  minio_data:
+  api_uploads:

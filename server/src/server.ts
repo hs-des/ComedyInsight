@@ -131,11 +131,15 @@ app.use(notFoundHandler);
 
 // Start server
 app.listen(config.port, '0.0.0.0', () => {
+  const redisConfig = getRedisConfig();
+  const redisLabel = '🔴 Redis:';
+  const redisInfo = 'url' in redisConfig ? redisConfig.url : `${redisConfig.host}:${redisConfig.port}`;
+
   console.log(`🚀 Server running on http://0.0.0.0:${config.port}`);
   console.log(`📊 Environment: ${config.nodeEnv}`);
   console.log(`🐳 Docker: ${isDocker() ? 'Yes' : 'No'}`);
   console.log(`📦 Database: ${process.env.DATABASE_URL ? 'Using DATABASE_URL' : 'Using individual DB_* vars'}`);
-  console.log(`🔴 Redis: ${getRedisConfig().host}:${getRedisConfig().port || 6379}`);
+  console.log(`${redisLabel} ${redisInfo}`);
 });
 
 // Graceful shutdown

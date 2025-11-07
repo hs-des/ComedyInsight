@@ -6,25 +6,113 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0A0A0A;
-
+  color-scheme: dark light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --color-bg: #0f172a;
+  --color-surface: rgba(15, 23, 42, 0.9);
+  --color-border: rgba(148, 163, 184, 0.2);
+  --color-text: rgba(248, 250, 252, 0.92);
+  --color-muted: rgba(148, 163, 184, 0.75);
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html[data-theme='dark'],
+html:not([data-theme]) {
+  --color-bg: #0f172a;
+  --color-surface: rgba(15, 23, 42, 0.92);
+  --color-border: rgba(148, 163, 184, 0.15);
+  --color-text: rgba(248, 250, 252, 0.92);
+  --color-muted: rgba(148, 163, 184, 0.7);
+}
+
+html[data-theme='light'] {
+  --color-bg: #f8fafc;
+  --color-surface: rgba(255, 255, 255, 0.95);
+  --color-border: rgba(226, 232, 240, 0.9);
+  --color-text: #0f172a;
+  --color-muted: rgba(100, 116, 139, 0.85);
 }
 
 body {
   margin: 0;
-  display: flex;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 #root {
   width: 100%;
 }
 
+.glass-panel {
+  @apply rounded-2xl shadow-xl transition backdrop-blur-lg;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+html[data-theme='light'] .glass-panel {
+  @apply shadow-lg;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+@keyframes slide-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease forwards;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-50%);
+    width: 40%;
+  }
+  50% {
+    transform: translateX(50%);
+    width: 55%;
+  }
+  100% {
+    transform: translateX(150%);
+    width: 35%;
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.4s ease-in-out infinite;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.1) 25%, rgba(148, 163, 184, 0.25) 50%, rgba(148, 163, 184, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

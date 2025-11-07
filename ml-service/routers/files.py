@@ -12,6 +12,8 @@ from ..dependencies import admin_with_rate_limit
 from ..db import get_db
 from ..models import FileObject
 from ..schemas import (
+    BucketListResponse,
+    BucketRequest,
     FileItem,
     FileListResponse,
     StorageUsageResponse,
@@ -137,3 +139,35 @@ async def storage_usage(
     usage = storage.get_usage()
     return StorageUsageResponse(total_files=usage["total_files"], total_size=usage["total_size"])
 
+
+@router.get("/buckets", response_model=BucketListResponse)
+async def list_buckets(
+    session: AsyncSession = Depends(get_db),
+    _: str = Depends(admin_with_rate_limit),
+) -> BucketListResponse:
+    storage = await StorageService.from_session(session)
+    return BucketListResponse(buckets=storage.list_buckets())
+
+
+@router.post("/buckets", status_code=status.HTTP_201_CREATED)
+async def create_bucket(
+    payload: BucketRequest,
+    session: AsyncSession = Depends(get_db),
+    _: str = Depends(admin_with_rate_limit),
+) -> dict:
+    storage = await StorageService.from_session(session)
+    storage.create_bucket(payload.name, payload.region)
+    return {"success": True, "bucket": payload.name}
+
+
+@router.delete("/buckets/{bucket_name}")
+async def delete_bucket(
+    bucket_name: str,
+    session: AsyncSession = Depends(get_db),
+    _: str = Depends(admin_with_rate_limit),
+) -> dict:
+    storage = await StorageService.from_session(session)
+    if bucket_name == storage.credentials.bucket:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete active storage bucket")
+    storage.delete_bucket(bucket_name)
+    return {"success": True, "bucket": bucket_name}

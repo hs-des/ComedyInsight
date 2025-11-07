@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import LoginPage from './pages/LoginPage'
 import Dashboard from './pages/Dashboard'
 import VideosPage from './pages/VideosPage'
@@ -15,7 +16,6 @@ import AddCategoryPage from './pages/AddCategoryPage'
 import EditCategoryPage from './pages/EditCategoryPage'
 import HomepageConfigurationPage from './pages/HomepageConfigurationPage'
 import SubtitlesPage from './pages/SubtitlesPage'
-import PlaceholderPage from './pages/PlaceholderPage'
 import UsersPage from './pages/UsersPage'
 import AddUserPage from './pages/AddUserPage'
 import SubscriptionsPage from './pages/SubscriptionsPage'
@@ -25,6 +25,10 @@ import NotificationsPage from './pages/NotificationsPage'
 import AuditLogsPage from './pages/AuditLogsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
+import SettingsPage from './pages/SettingsPage'
+import FilesPage from './pages/FilesPage'
+import NotificationCenter from './components/common/NotificationCenter'
+import Toaster from './components/ui/Toaster'
 
 const queryClient = new QueryClient()
 
@@ -32,7 +36,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <NotificationProvider>
         <Router>
+            <Toaster />
+            <NotificationCenter />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
@@ -63,9 +70,12 @@ function App() {
               <Route path="/subscriptions" element={<SubscriptionsPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/files" element={<FilesPage />} />
             </Route>
           </Routes>
         </Router>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   )
