@@ -13,6 +13,7 @@ from schemas import (
     SecurityConfig,
     BackupResponse,
     RestoreRequest,
+    SettingsConnectionTestRequest,
     SettingsPayload,
     SettingsResponse,
     SettingsTestStorageRequest,
@@ -104,6 +105,27 @@ async def test_twilio(
         phone_number=payload.phone_number,
     )
     return {"success": success, "message": message, "tested_by": actor}
+
+
+@router.post("/test-connection")
+async def test_connection(
+    payload: SettingsConnectionTestRequest,
+    actor: str = Depends(admin_with_rate_limit),
+) -> Dict[str, Any]:
+    service = payload.service.lower()
+    data = payload.payload or {}
+
+    if service in {"s3", "storage"}:
+        storage_payload = SettingsTestStorageRequest(**data)
+        response = await test_s3(storage_payload, actor)
+        return {**response, "service": "s3"}
+
+    if service in {"twilio", "otp"}:
+        twilio_payload = SettingsTestTwilioRequest(**data)
+        response = await test_twilio(twilio_payload, actor)
+        return {**response, "service": "twilio"}
+
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unsupported service '{payload.service}'")
 
 
 @router.post("/backup", response_model=BackupResponse)

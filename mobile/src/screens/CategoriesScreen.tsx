@@ -2,30 +2,61 @@
  * CategoriesScreen - Browse videos by category
  */
 
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { mockCategories } from '../data/mockData';
+import { useLibraryStore } from '../store/useLibraryStore';
 
 interface CategoriesScreenProps {
   navigation: any;
 }
 
 export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
+  const categories = useLibraryStore((state) => state.categories);
+  const fetchHome = useLibraryStore((state) => state.fetchHome);
+  const loading = useLibraryStore((state) => state.loading);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!categories.length && !loading) {
+        fetchHome().catch(() => void 0);
+      }
+    }, [categories.length, loading, fetchHome])
+  );
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchHome();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleCategoryPress = (categoryId: string, categoryName: string) => {
     navigation.navigate('CategoryDetail', { categoryId, categoryName });
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+      >
         <View style={styles.header}>
-          <Text style={styles.title}>Browse Categories</Text>
+          <Text style={styles.title}>{t('filters.category')}</Text>
         </View>
 
         <View style={styles.grid}>
-          {mockCategories.map((category) => (
+          {categories.map((category) => {
+            const count = category.video_count ?? (category.metadata?.videoCount as number | undefined);
+            return (
             <TouchableOpacity
               key={category.id}
               style={styles.categoryCard}
@@ -36,9 +67,12 @@ export const CategoriesScreen: React.FC<CategoriesScreenProps> = ({ navigation }
                 <Text style={styles.icon}>🎭</Text>
               </View>
               <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryCount}>{category.count} videos</Text>
+              <Text style={styles.categoryCount}>
+                {count ? t('search.results', { count }) : t('search.noResults')}
+              </Text>
             </TouchableOpacity>
-          ))}
+          );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>

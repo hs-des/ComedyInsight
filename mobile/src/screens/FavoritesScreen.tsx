@@ -2,28 +2,25 @@
  * FavoritesScreen - List of favorite videos
  */
 
-import React from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+
 import { VideoCard } from '../components/VideoCard';
 import { EmptyState } from '../components/EmptyState';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import { colors, typography, spacing } from '../theme';
-import { Video, mockVideos } from '../data/mockData';
+import { useLibraryStore } from '../store/useLibraryStore';
+import type { Video } from '../types/content';
 
 interface FavoritesScreenProps {
   navigation: any;
 }
 
 export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) => {
-  // In real app, fetch from API
-  const favorites: Video[] = mockVideos.slice(0, 4);
+  const { t } = useTranslation();
+  const favoritesMap = useLibraryStore((state) => state.favorites);
+  const favorites: Video[] = useMemo(() => Object.values(favoritesMap), [favoritesMap]);
 
   const handleCardPress = (video: Video) => {
     navigation.navigate('VideoDetail', { videoId: video.id, video });
@@ -33,12 +30,12 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) 
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Favorites</Text>
+          <Text style={styles.title}>{t('favorites.title')}</Text>
         </View>
         <EmptyState
           icon="❤️"
-          title="No favorites yet"
-          message="Start adding videos to your favorites"
+          title={t('favorites.empty')}
+          message={t('video.moreLikeThis')}
         />
       </SafeAreaView>
     );
@@ -47,8 +44,8 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({ navigation }) 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Favorites</Text>
-        <Text style={styles.subtitle}>{favorites.length} video{favorites.length !== 1 ? 's' : ''}</Text>
+        <Text style={styles.title}>{t('favorites.title')}</Text>
+        <Text style={styles.subtitle}>{t('search.results', { count: favorites.length })}</Text>
       </View>
 
       <FlatList

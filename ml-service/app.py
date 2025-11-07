@@ -5,12 +5,20 @@ from models import Base
 from routers.settings import router as settings_router
 from routers.auth import router as auth_router
 from routers.files import router as files_router
+from routers.content import router as content_router
+from routers.monetization import router as monetization_router
+from routers.uploads import router as uploads_router
+from routers.users import router as users_router
 
 app = FastAPI(title="ComedyInsight Configuration Service")
 
 app.include_router(settings_router)
 app.include_router(auth_router)
 app.include_router(files_router)
+app.include_router(uploads_router)
+app.include_router(content_router)
+app.include_router(monetization_router)
+app.include_router(users_router)
 
 
 @app.get("/health", tags=["system"])

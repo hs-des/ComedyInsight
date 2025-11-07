@@ -1,0 +1,68 @@
+{
+  "home": {
+    "title": "Découvrir la comédie",
+    "newReleases": "Nouveautés",
+    "topRated": "Mieux notés",
+    "byArtist": "Par artiste",
+    "continueWatching": "Continuer à regarder"
+  },
+  "search": {
+    "title": "Recherche",
+    "placeholder": "Rechercher des vidéos, artistes, catégories",
+    "suggestions": "Suggestions",
+    "noResults": "Aucun résultat",
+    "results": "{{count}} résultat",
+    "results_plural": "{{count}} résultats"
+  },
+  "video": {
+    "play": "Lire",
+    "download": "Télécharger",
+    "favorite": "Favori",
+    "share": "Partager",
+    "description": "Description",
+    "moreLikeThis": "Similaires",
+    "premiumRequired": "Contenu premium",
+    "unlock": "Débloquer l'accès"
+  },
+  "filters": {
+    "all": "Tous",
+    "category": "Catégorie",
+    "artist": "Artiste",
+    "language": "Langue",
+    "sort": "Trier"
+  },
+  "profile": {
+    "title": "Profil",
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "guest": "Utilisateur invité",
+    "linkAccount": "Lier un compte"
+  },
+  "subscription": {
+    "title": "Abonnements",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "benefits": "Avantages",
+    "subscribe": "S'abonner",
+    "manage": "Gérer l'abonnement"
+  },
+  "player": {
+    "quality": "Qualité",
+    "subtitles": "Sous-titres",
+    "audio": "Audio",
+    "next": "Suivant",
+    "previous": "Précédent"
+  },
+  "favorites": {
+    "title": "Favoris",
+    "empty": "Ajoutez des vidéos à vos favoris"
+  },
+  "history": {
+    "title": "Historique"
+  },
+  "notifications": {
+    "enabled": "Notifications activées",
+    "disabled": "Notifications désactivées"
+  }
+}
+

@@ -58,6 +58,66 @@ export interface SettingsResponse {
   security: SecuritySettings
 }
 
+export interface FirebaseSettings {
+  projectId: string
+  apiKey: string
+  appId: string
+  messagingSenderId: string
+  measurementId?: string
+  defaultNotificationTitle: string
+  defaultNotificationBody: string
+  serviceAccountLinked?: boolean
+}
+
+export interface FirebaseTestPayload {
+  target: string
+  title: string
+  body: string
+}
+
+export interface FirebaseTestResponse {
+  success: boolean
+  message: string
+  requestId?: string
+}
+
+export interface OAuthProviderSettings {
+  googleClientId: string
+  googleClientSecret: string
+  googleRedirectUri: string
+  googleStatus: 'active' | 'inactive'
+  facebookAppId: string
+  facebookAppSecret: string
+  facebookRedirectUri: string
+  facebookStatus: 'active' | 'inactive'
+}
+
+export interface OAuthTestPayload {
+  provider: 'google' | 'facebook'
+}
+
+export interface OAuthTestResponse {
+  provider: 'google' | 'facebook'
+  success: boolean
+  message: string
+}
+
+export interface ApiKeyUsage extends ApiKey {
+  permissions: string[]
+  usageCount: number
+  lastRotatedAt?: string | null
+  status: 'active' | 'revoked'
+}
+
+export interface IntegrationAuditLogEntry {
+  id: string
+  actor: string
+  action: string
+  target: string
+  details?: string
+  createdAt: string
+}
+
 export const fetchSettings = async (): Promise<SettingsResponse> => {
   const { data } = await axios.get<SettingsResponse>('/api/admin/settings')
   return data
@@ -113,6 +173,65 @@ export const revokeApiKey = async (id: string): Promise<{ success: boolean }> =>
 
 export const fetchApiKeys = async (): Promise<ApiKey[]> => {
   const { data } = await axios.get<ApiKey[]>('/api/admin/settings/security/api-keys')
+  return data
+}
+
+export const fetchFirebaseSettings = async (): Promise<FirebaseSettings> => {
+  const { data } = await axios.get<FirebaseSettings>('/api/admin/settings/firebase')
+  return data
+}
+
+export const updateFirebaseSettings = async (payload: FirebaseSettings): Promise<FirebaseSettings> => {
+  const { data } = await axios.put<FirebaseSettings>('/api/admin/settings/firebase', payload)
+  return data
+}
+
+export const uploadFirebaseServiceAccount = async (file: File): Promise<{ uploaded: boolean; fileName?: string }> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await axios.post<{ uploaded: boolean; fileName?: string }>('/api/admin/settings/firebase/service-account', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export const testFirebaseNotification = async (payload: FirebaseTestPayload): Promise<FirebaseTestResponse> => {
+  const { data } = await axios.post<FirebaseTestResponse>('/api/admin/settings/firebase/test-notification', payload)
+  return data
+}
+
+export const fetchOAuthSettings = async (): Promise<OAuthProviderSettings> => {
+  const { data } = await axios.get<OAuthProviderSettings>('/api/admin/settings/oauth')
+  return data
+}
+
+export const updateOAuthSettings = async (payload: OAuthProviderSettings): Promise<OAuthProviderSettings> => {
+  const { data } = await axios.put<OAuthProviderSettings>('/api/admin/settings/oauth', payload)
+  return data
+}
+
+export const testOAuthProvider = async (payload: OAuthTestPayload): Promise<OAuthTestResponse> => {
+  const { data } = await axios.post<OAuthTestResponse>('/api/admin/settings/oauth/test', payload)
+  return data
+}
+
+export const fetchApiKeyUsage = async (): Promise<ApiKeyUsage[]> => {
+  const { data } = await axios.get<ApiKeyUsage[]>('/api/admin/settings/security/api-keys/usage')
+  return data
+}
+
+export const rotateApiKey = async (id: string): Promise<{ apiKey: ApiKeyUsage; secret: string }> => {
+  const { data } = await axios.post<{ apiKey: ApiKeyUsage; secret: string }>(`/api/admin/settings/security/api-keys/${id}/rotate`)
+  return data
+}
+
+export const updateApiKeyPermissions = async (id: string, permissions: string[]): Promise<ApiKeyUsage> => {
+  const { data } = await axios.put<ApiKeyUsage>(`/api/admin/settings/security/api-keys/${id}/permissions`, { permissions })
+  return data
+}
+
+export const fetchIntegrationAuditLog = async (): Promise<IntegrationAuditLogEntry[]> => {
+  const { data } = await axios.get<IntegrationAuditLogEntry[]>('/api/admin/settings/integrations/audit-log')
   return data
 }
 

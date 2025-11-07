@@ -4,7 +4,6 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Video } from '../data/mockData';
 
 const API_BASE_URL = __DEV__
   ? 'http://localhost:3000/api'
@@ -45,7 +44,10 @@ class APIService {
   }
 
   // Search videos
-  async searchVideos(query: string, params?: { artist?: string; limit?: number }) {
+  async searchVideos(
+    query: string,
+    params?: { artist?: string; limit?: number; language?: string; category?: string }
+  ) {
     try {
       const response = await this.api.get('/videos', {
         params: {
@@ -69,6 +71,7 @@ class APIService {
     language?: string;
     min_rating?: number;
     max_duration?: number;
+    sort?: 'latest' | 'popular' | 'featured';
   }) {
     try {
       const response = await this.api.get('/videos', { params });
@@ -86,6 +89,38 @@ class APIService {
       return response.data;
     } catch (error) {
       console.error('Get categories error:', error);
+      throw error;
+    }
+  }
+
+  async getVideo(id: string) {
+    try {
+      const response = await this.api.get(`/videos/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get video error:', error);
+      throw error;
+    }
+  }
+
+  async getVideoSubtitles(id: string, language?: string) {
+    try {
+      const response = await this.api.get(`/videos/${id}/subtitles`, {
+        params: { language },
+      });
+      return response.data.subtitles ?? response.data;
+    } catch (error) {
+      console.error('Get subtitles error:', error);
+      throw error;
+    }
+  }
+
+  async getArtists() {
+    try {
+      const response = await this.api.get('/artists');
+      return response.data;
+    } catch (error) {
+      console.error('Get artists error:', error);
       throw error;
     }
   }

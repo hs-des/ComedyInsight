@@ -1,0 +1,68 @@
+{
+  "home": {
+    "title": "Discover Comedy",
+    "newReleases": "New Releases",
+    "topRated": "Top Rated",
+    "byArtist": "By Artist",
+    "continueWatching": "Continue Watching"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search for videos, artists, categories",
+    "suggestions": "Suggestions",
+    "noResults": "No results found",
+    "results": "{{count}} result" ,
+    "results_plural": "{{count}} results"
+  },
+  "video": {
+    "play": "Play",
+    "download": "Download",
+    "favorite": "Favorite",
+    "share": "Share",
+    "description": "Description",
+    "moreLikeThis": "More Like This",
+    "premiumRequired": "Premium content",
+    "unlock": "Unlock access"
+  },
+  "filters": {
+    "all": "All",
+    "category": "Category",
+    "artist": "Artist",
+    "language": "Language",
+    "sort": "Sort"
+  },
+  "profile": {
+    "title": "Profile",
+    "login": "Log In",
+    "logout": "Log Out",
+    "guest": "Guest user",
+    "linkAccount": "Link account"
+  },
+  "subscription": {
+    "title": "Subscriptions",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "benefits": "Benefits",
+    "subscribe": "Subscribe",
+    "manage": "Manage Subscription"
+  },
+  "player": {
+    "quality": "Quality",
+    "subtitles": "Subtitles",
+    "audio": "Audio",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "Start adding videos to your favorites"
+  },
+  "history": {
+    "title": "Watch History"
+  },
+  "notifications": {
+    "enabled": "Notifications enabled",
+    "disabled": "Notifications disabled"
+  }
+}
+

@@ -32,8 +32,9 @@ import {
   Globe,
   EyeOff,
 } from 'lucide-react'
+import ThirdPartySettings from './settings/ThirdPartySettings'
 
-type TabKey = 'storage' | 'twilio' | 'general' | 'security'
+type TabKey = 'storage' | 'twilio' | 'integrations' | 'general' | 'security'
 
 interface StorageFormValues extends StorageSettings {}
 
@@ -242,6 +243,7 @@ export default function SettingsPage() {
     () => [
       { id: 'storage' as const, label: 'Storage', description: 'Configure S3 / MinIO integration', icon: Cloud },
       { id: 'twilio' as const, label: 'Twilio OTP', description: 'Set up SMS authentication', icon: Phone },
+      { id: 'integrations' as const, label: 'Third-Party APIs', description: 'Manage AWS, Twilio, Firebase, OAuth', icon: Zap },
       { id: 'general' as const, label: 'Application', description: 'Global dashboard preferences', icon: SettingsIcon },
       { id: 'security' as const, label: 'Security', description: 'Manage access & API keys', icon: Shield },
     ],
@@ -516,6 +518,8 @@ export default function SettingsPage() {
               </form>
             </section>
           )}
+
+          {activeTab === 'integrations' && <ThirdPartySettings />}
 
           {activeTab === 'general' && (
             <section className="settings-card">

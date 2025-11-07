@@ -14,6 +14,7 @@ import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { DownloadsScreen } from '../screens/DownloadsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { colors } from '../theme';
+import { VideoPlayerScreen } from '../screens/VideoPlayerScreen';
 
 const Stack = createStackNavigator();
 
@@ -44,6 +45,11 @@ export const AppNavigator = () => {
             headerBackTitleVisible: false,
             title: 'Video Details',
           }}
+        />
+        <Stack.Screen
+          name="VideoPlayer"
+          component={VideoPlayerScreen}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="CategoryDetail"

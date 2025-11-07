@@ -34,8 +34,36 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "android_app_id": "ca-app-pub-xxxxxxxxxxxxxxxx~android",
+          "ios_app_id": "ca-app-pub-xxxxxxxxxxxxxxxx~ios"
+        }
+      ],
+      "expo-notifications",
+      [
+        "@react-native-purchases/react-native-purchases",
+        {
+          "androidStore": "play_store"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "ADMOB_BANNER_ID_ANDROID": "ca-app-pub-xxxxxxxxxxxxxxxx/banner",
+      "ADMOB_BANNER_ID_IOS": "ca-app-pub-xxxxxxxxxxxxxxxx/banner",
+      "ADMOB_INTERSTITIAL_ID_ANDROID": "ca-app-pub-xxxxxxxxxxxxxxxx/interstitial",
+      "ADMOB_INTERSTITIAL_ID_IOS": "ca-app-pub-xxxxxxxxxxxxxxxx/interstitial",
+      "REVENUECAT_ANDROID_KEY": "goog_xxxxxxxxxxxxxxxxx",
+      "REVENUECAT_IOS_KEY": "appl_xxxxxxxxxxxxxxxxx",
+      "GOOGLE_OAUTH_EXPO_CLIENT_ID": "GOOGLE_OAUTH_EXPO_CLIENT_ID",
+      "FACEBOOK_APP_ID": "FACEBOOK_APP_ID",
+      "FACEBOOK_CLIENT_TOKEN": "FACEBOOK_CLIENT_TOKEN",
+      "EAS": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
   }
 }
 

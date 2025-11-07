@@ -2,27 +2,40 @@
  * SearchScreen - Search for videos with live suggestions
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoCard } from '../components/VideoCard';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useDebounce } from '../hooks/useDebounce';
-import { apiService } from '../services/api.service';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { mockVideos, Video } from '../data/mockData';
+import { useLibraryStore } from '../store/useLibraryStore';
+import { contentService } from '../services/content.service';
+import type { Video } from '../types/content';
+import { useTranslation } from 'react-i18next';
+import { useMonetizationStore } from '../store/useMonetizationStore';
 
 interface SearchScreenProps {
   navigation: any;
 }
 
 export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<Video[]>([]);
   const [suggestions, setSuggestions] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const libraryVideos = useLibraryStore((state) => state.videos);
+  const categories = useLibraryStore((state) => state.categories);
+  const languagePreference = useLibraryStore((state) => state.selectedLanguage);
+  const hasPremiumAccess = useLibraryStore((state) => state.hasPremiumAccess);
+  const isPremiumEntitled = useMonetizationStore((state) => state.isPremium);
 
   const debouncedQuery = useDebounce(searchQuery, 500);
 
@@ -33,15 +46,14 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         setLoading(true);
         setError(null);
         try {
-          // Try API first, fallback to mock
-          const response = await apiService.searchVideos(debouncedQuery, { limit: 5 });
-          setSuggestions(response.videos || []);
+          const response = await contentService.searchVideos(debouncedQuery, {
+            category: selectedCategory || undefined,
+            language: selectedLanguage || undefined,
+          });
+          setSuggestions(response.slice(0, 6));
         } catch (err) {
-          // Fallback to mock data
-          const filtered = mockVideos.filter(
-            (video) =>
-              video.title.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-              video.artist?.toLowerCase().includes(debouncedQuery.toLowerCase())
+          const filtered = libraryVideos.filter((video) =>
+            video.title.toLowerCase().includes(debouncedQuery.toLowerCase())
           );
           setSuggestions(filtered.slice(0, 5));
         } finally {
@@ -67,24 +79,27 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     setError(null);
 
     try {
-      // Try API first, fallback to mock
-      const response = await apiService.searchVideos(query);
-      setResults(response.videos || []);
+      const response = await contentService.searchVideos(query, {
+        category: selectedCategory || undefined,
+        language: selectedLanguage || undefined,
+      });
+      setResults(response);
     } catch (err) {
-      // Fallback to mock data
-      const filtered = mockVideos.filter(
-        (video) =>
-          video.title.toLowerCase().includes(query.toLowerCase()) ||
-          video.artist?.toLowerCase().includes(query.toLowerCase())
+      const filtered = libraryVideos.filter((video) =>
+        video.title.toLowerCase().includes(query.toLowerCase())
       );
       setResults(filtered);
-      setError('Using offline data');
+      setError(t('search.noResults'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleCardPress = (video: Video) => {
+    if (video.is_premium && !(hasPremiumAccess || isPremiumEntitled)) {
+      navigation.navigate('Subscription');
+      return;
+    }
     navigation.navigate('VideoDetail', { videoId: video.id, video });
   };
 
@@ -93,16 +108,30 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
     handleSearch(suggestion.title);
   };
 
+  useEffect(() => {
+    if (languagePreference) {
+      setSelectedLanguage(languagePreference);
+    }
+  }, [languagePreference]);
+
+  const languageOptions = useMemo(() => {
+    const languages = new Set<string>();
+    libraryVideos.forEach((video) => {
+      if (video.language) languages.add(video.language);
+    });
+    return Array.from(languages);
+  }, [libraryVideos]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Search</Text>
+        <Text style={styles.title}>{t('search.title')}</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search for videos..."
+          placeholder={t('search.placeholder')}
           placeholderTextColor={colors.textTertiary}
           value={searchQuery}
           onChangeText={handleSearch}
@@ -111,10 +140,28 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         />
       </View>
 
+      <View style={styles.filtersRow}>
+        <ScrollSelect
+          label={t('filters.category')}
+          options={[{ label: t('filters.all'), value: null }, ...categories.map((category) => ({
+            label: category.name,
+            value: category.id,
+          }))]}
+          value={selectedCategory}
+          onSelect={setSelectedCategory}
+        />
+        <ScrollSelect
+          label={t('filters.language')}
+          options={[{ label: t('filters.all'), value: null }, ...languageOptions.map((code) => ({ label: code.toUpperCase(), value: code }))]}
+          value={selectedLanguage}
+          onSelect={setSelectedLanguage}
+        />
+      </View>
+
       {/* Suggestions */}
       {searchQuery.length > 0 && suggestions.length > 0 && results.length === 0 && (
         <View style={styles.suggestionsContainer}>
-          <Text style={styles.suggestionsTitle}>Suggestions</Text>
+          <Text style={styles.suggestionsTitle}>{t('search.suggestions')}</Text>
           <FlatList
             data={suggestions}
             renderItem={({ item }) => (
@@ -124,7 +171,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
                 activeOpacity={0.7}
               >
                 <Text style={styles.suggestionText}>{item.title}</Text>
-                {item.artist && <Text style={styles.suggestionArtist}>{item.artist}</Text>}
+                {item.artists && item.artists.length > 0 && (
+                  <Text style={styles.suggestionArtist}>{item.artists[0].name}</Text>
+                )}
               </TouchableOpacity>
             )}
             keyExtractor={(item) => item.id}
@@ -136,24 +185,24 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       {searchQuery.length === 0 ? (
         <EmptyState
           icon="🔍"
-          title="Search for comedy videos"
-          message="Find your favorite comedians and content"
+          title={t('search.placeholder')}
+          message={t('home.title')}
         />
       ) : loading ? (
-        <LoadingSpinner message="Searching..." />
+        <LoadingSpinner message={t('search.title')} />
       ) : error ? (
-        <EmptyState icon="⚠️" title={error} message="Limited results available" />
+        <EmptyState icon="⚠️" title={error} message="" />
       ) : results.length === 0 ? (
         <EmptyState
           icon="😕"
-          title="No results found"
-          message="Try a different search term"
+          title={t('search.noResults')}
+          message={t('filters.sort')}
         />
       ) : (
         <>
           <View style={styles.resultsHeader}>
             <Text style={styles.resultsCount}>
-              {results.length} result{results.length !== 1 ? 's' : ''}
+              {t('search.results', { count: results.length })}
             </Text>
           </View>
           <FlatList
@@ -243,5 +292,46 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.xs / 2,
   },
+  filtersRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
 });
+
+interface ScrollSelectOption {
+  label: string;
+  value: string | null;
+}
+
+interface ScrollSelectProps {
+  label: string;
+  options: ScrollSelectOption[];
+  value: string | null;
+  onSelect: (value: string | null) => void;
+}
+
+const ScrollSelect: React.FC<ScrollSelectProps> = ({ label, options, value, onSelect }) => {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={styles.suggestionsTitle}>{label}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {options.map((option) => {
+          const isActive = value === option.value;
+          return (
+            <TouchableOpacity
+              key={`${label}-${option.value ?? 'all'}`}
+              style={[styles.suggestionItem, isActive && { backgroundColor: colors.primary }]}
+              onPress={() => onSelect(option.value)}
+            >
+              <Text style={[styles.suggestionText, isActive && { color: colors.background }]}>{option.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+};
 

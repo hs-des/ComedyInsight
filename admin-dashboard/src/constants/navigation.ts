@@ -37,7 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Artists',
     children: [
       { path: '/artists', label: 'All Artists' },
-      { path: '/artists/add', label: 'Add Artist' },
+      { path: '/artists/new', label: 'Add Artist' },
     ],
   },
   {
@@ -46,21 +46,30 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Categories',
     children: [
       { path: '/categories', label: 'All Categories' },
-      { path: '/categories/add', label: 'Add Category' },
+      { path: '/categories/new', label: 'Add Category' },
     ],
   },
   { path: '/homepage', icon: LayoutDashboard, label: 'Homepage' },
-  { path: '/ads', icon: TrendingUp, label: 'Ads' },
+  {
+    path: '/monetization',
+    icon: TrendingUp,
+    label: 'Monetization',
+    children: [
+      { path: '/monetization/plans', label: 'Subscription Plans' },
+      { path: '/monetization/admob', label: 'AdMob Settings' },
+      { path: '/ads', label: 'Ads Inventory' },
+    ],
+  },
   {
     path: '/users',
     icon: Users,
     label: 'Users',
     children: [
-      { path: '/users', label: 'User Directory' },
+      { path: '/users', label: 'Directory' },
       { path: '/users/add', label: 'Invite User' },
-      { path: '/subscriptions', label: 'Subscriptions' },
     ],
   },
+  { path: '/analytics/revenue', icon: Eye, label: 'Revenue Analytics' },
   { path: '/fake-views', icon: Eye, label: 'Fake Views' },
   { path: '/notifications', icon: Bell, label: 'Notifications' },
   { path: '/audit-logs', icon: ScrollText, label: 'Audit Logs' },

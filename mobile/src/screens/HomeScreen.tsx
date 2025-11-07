@@ -2,7 +2,7 @@
  * HomeScreen - Main landing screen with featured content
  */
 
-import React from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,19 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+
 import { VideoCard } from '../components/VideoCard';
 import { AdBanner } from '../components/AdBanner';
-import { colors, typography, spacing } from '../theme';
-import { mockVideos, mockFeaturedVideos, Video } from '../data/mockData';
+import { colors, typography, spacing, borderRadius } from '../theme';
+import { useLibraryStore } from '../store/useLibraryStore';
+import { useMonetizationStore } from '../store/useMonetizationStore';
+import type { Video } from '../types/content';
 
 const SLIDER_HEIGHT = Dimensions.get('window').height * 0.3;
 
@@ -26,7 +33,41 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const videos = useLibraryStore((state) => state.videos);
+  const featured = useLibraryStore((state) => state.featured);
+  const categories = useLibraryStore((state) => state.categories);
+  const loading = useLibraryStore((state) => state.loading);
+  const fetchHome = useLibraryStore((state) => state.fetchHome);
+  const hasPremiumAccess = useLibraryStore((state) => state.hasPremiumAccess);
+
+  const isPremiumEntitled = useMonetizationStore((state) => state.isPremium);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!featured.length && !loading) {
+        fetchHome().catch(() => void 0);
+      }
+    }, [featured.length, loading, fetchHome])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchHome();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleCardPress = (video: Video) => {
+    if (video.is_premium && !(hasPremiumAccess || isPremiumEntitled)) {
+      navigation.navigate('Subscription');
+      return;
+    }
     navigation.navigate('VideoDetail', { videoId: video.id, video });
   };
 
@@ -42,7 +83,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     return (
       <View style={styles.sliderContainer}>
         <FlatList
-          data={mockFeaturedVideos}
+          data={featured}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -50,13 +91,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           scrollEventThrottle={16}
           renderItem={({ item }) => (
             <View style={styles.slide}>
-              <VideoCard video={item} onPress={handleCardPress} width={Dimensions.get('window').width} />
+              <VideoCard video={item} onPress={handleCardPress} width={Dimensions.get('window').width - spacing.md * 2} />
             </View>
           )}
           keyExtractor={(item) => item.id}
         />
         <View style={styles.pagination}>
-          {mockFeaturedVideos.map((_, index) => (
+          {featured.map((_, index) => (
             <View
               key={index}
               style={[
@@ -70,11 +111,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     );
   };
 
-  const renderVideoSection = (title: string, videos: Video[]) => (
+  const renderVideoSection = (title: string, data: Video[]) => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <FlatList
-        data={videos}
+        data={data}
         horizontal
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
@@ -86,29 +127,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     </View>
   );
 
+  const filteredVideos = useMemo(() => {
+    if (!selectedCategory) return videos;
+    return videos.filter((video) =>
+      video.categories?.some((category) => category.id === selectedCategory || category.slug === selectedCategory)
+    );
+  }, [videos, selectedCategory]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* Featured Slider */}
-        {renderSlider()}
+        {featured.length > 0 && renderSlider()}
 
-        {/* New Releases */}
-        {renderVideoSection('New Releases', mockVideos.slice(0, 4))}
+        <View style={styles.filterSection}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity
+              style={[styles.filterPill, !selectedCategory && styles.filterPillActive]}
+              onPress={() => setSelectedCategory(null)}
+            >
+              <Text style={[styles.filterText, !selectedCategory && styles.filterTextActive]}>{t('filters.all')}</Text>
+            </TouchableOpacity>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[styles.filterPill, selectedCategory === category.id && styles.filterPillActive]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Text style={[styles.filterText, selectedCategory === category.id && styles.filterTextActive]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-        {/* Ad Banner */}
+        {renderVideoSection(t('home.newReleases'), filteredVideos.slice(0, 8))}
         <AdBanner />
-
-        {/* Top Rated */}
-        {renderVideoSection('Top Rated', mockVideos.slice(2, 6))}
-
-        {/* Ad Banner */}
+        {renderVideoSection(t('home.topRated'), filteredVideos.slice(8, 16))}
         <AdBanner />
-
-        {/* By Artist */}
-        {renderVideoSection('By Artist', mockVideos.slice(4))}
+        {renderVideoSection(t('home.byArtist'), filteredVideos.slice(16, 24))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,6 +221,31 @@ const styles = StyleSheet.create({
   },
   sectionContent: {
     paddingHorizontal: spacing.md,
+  },
+  filterSection: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  filterPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: spacing.sm,
+  },
+  filterPillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  filterTextActive: {
+    color: colors.text,
   },
 });
 

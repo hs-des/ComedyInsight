@@ -20,7 +20,7 @@ const baseActions: QuickActionConfig[] = [
   {
     id: 'add-artist',
     label: 'Add Artist',
-    to: '/artists/add',
+    to: '/artists/new',
     icon: Users,
     shortcut: 'shift+a',
   },

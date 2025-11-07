@@ -2,7 +2,7 @@
  * VideoDetailScreen - Video landing page with details
  */
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,20 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+
 import { colors, typography, spacing, borderRadius } from '../theme';
 import { AdBanner } from '../components/AdBanner';
 import { usePreRollAd } from '../components/PreRollAd';
-import { Video } from '../data/mockData';
+import type { Video, Subtitle } from '../types/content';
+import { useLibraryStore } from '../store/useLibraryStore';
+import { useMonetizationStore } from '../store/useMonetizationStore';
+import { downloadService } from '../services/download.service';
+import { EmptyState } from '../components/EmptyState';
+import { VideoCard } from '../components/VideoCard';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -31,15 +39,49 @@ interface VideoDetailScreenProps {
 }
 
 export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({ navigation, route }) => {
-  const { video } = route.params;
+  const initialVideo = route.params.video;
+  const videoId = route.params.videoId;
+  const { t } = useTranslation();
+
+  const [video, setVideo] = useState<Video | null>(initialVideo || null);
+  const [subtitles, setSubtitles] = useState<Subtitle[]>(initialVideo?.subtitles || []);
+  const [downloading, setDownloading] = useState(false);
+
+  const fetchVideoById = useLibraryStore((state) => state.fetchVideoById);
+  const fetchSubtitles = useLibraryStore((state) => state.fetchSubtitles);
+  const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
+  const favorites = useLibraryStore((state) => state.favorites);
+  const hasPremiumAccess = useLibraryStore((state) => state.hasPremiumAccess);
+  const videos = useLibraryStore((state) => state.videos);
+
+  const isPremiumEntitled = useMonetizationStore((state) => state.isPremium);
+
   const { showPreRoll } = usePreRollAd();
 
   const handlePlay = async () => {
+    if (!video) return;
+    if (video.is_premium && !(hasPremiumAccess || isPremiumEntitled)) {
+      navigation.navigate('Subscription');
+      return;
+    }
     // Show pre-roll ad before video playback
     await showPreRoll();
     
     // Navigate to video player
     navigation.navigate('VideoPlayer', { video });
+  };
+
+  const handleDownload = async () => {
+    if (!video) return;
+    try {
+      setDownloading(true);
+      await downloadService.downloadVideo(video.id, video.title, video.thumbnail_url);
+      Alert.alert('Download started', 'Check Downloads to monitor progress.');
+    } catch (error) {
+      Alert.alert('Download failed', 'Unable to download this video.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const formatViews = (count: number): string => {
@@ -68,23 +110,68 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({ navigation
     return stars.join('');
   };
 
+  useEffect(() => {
+    let mounted = true;
+    if (!video) {
+      fetchVideoById(videoId).then((fetched) => {
+        if (mounted && fetched) {
+          setVideo(fetched);
+        }
+      }).catch(() => void 0);
+    }
+
+    if (!subtitles.length) {
+      fetchSubtitles(videoId)
+        .then((items) => {
+          if (mounted) {
+            setSubtitles(items);
+          }
+        })
+        .catch(() => void 0);
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [video, subtitles.length, videoId, fetchVideoById, fetchSubtitles]);
+
+  const isFavorite = useMemo(() => {
+    if (!video) return false;
+    return Boolean(favorites[video.id]);
+  }, [favorites, video]);
+
+  const recommended = useMemo(() => {
+    if (!video) return [] as Video[];
+    return videos
+      .filter((item) => item.id !== video.id && item.categories?.some((category) => video.categories?.some((c) => c.id === category.id)))
+      .slice(0, 10);
+  }, [videos, video]);
+
+  if (!video) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <EmptyState icon="🎬" title={t('video.description')} message={t('search.noResults')} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Video Thumbnail */}
         <View style={styles.thumbnailContainer}>
           <Image source={{ uri: video.thumbnail_url }} style={styles.thumbnail} />
-          <View style={styles.playButton}>
+          <TouchableOpacity style={styles.playButton} onPress={handlePlay} activeOpacity={0.8}>
             <Text style={styles.playIcon}>▶</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
-        {/* Video Info */}
         <View style={styles.content}>
           <Text style={styles.title}>{video.title}</Text>
 
           <View style={styles.metaRow}>
-            <Text style={styles.views}>{formatViews(video.visible_view_count)} views</Text>
+            {typeof video.visible_view_count === 'number' && (
+              <Text style={styles.views}>{formatViews(video.visible_view_count)} views</Text>
+            )}
             {video.language && (
               <>
                 <Text style={styles.separator}>•</Text>
@@ -99,48 +186,69 @@ export const VideoDetailScreen: React.FC<VideoDetailScreenProps> = ({ navigation
             )}
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.primaryButton} activeOpacity={0.7} onPress={handlePlay}>
               <Text style={styles.buttonIcon}>▶</Text>
-              <Text style={styles.buttonText}>Play</Text>
+              <Text style={styles.buttonText}>{t('video.play')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-              <Text style={styles.buttonIcon}>⬇️</Text>
+            <TouchableOpacity style={styles.iconButton} activeOpacity={0.7} onPress={handleDownload} disabled={downloading}>
+              <Text style={styles.buttonIcon}>{downloading ? '⏳' : '⬇️'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-              <Text style={styles.buttonIcon}>❤️</Text>
+            <TouchableOpacity
+              style={[styles.iconButton, isFavorite && styles.iconButtonActive]}
+              activeOpacity={0.7}
+              onPress={() => toggleFavorite(video)}
+            >
+              <Text style={styles.buttonIcon}>{isFavorite ? '💖' : '🤍'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
               <Text style={styles.buttonIcon}>📤</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Artist Info */}
-          {video.artist && (
+          {video.artists && video.artists.length > 0 && (
             <TouchableOpacity style={styles.artistContainer} activeOpacity={0.7}>
               <View style={styles.artistAvatar}>
-                <Text style={styles.artistAvatarText}>{video.artist[0]}</Text>
+                <Text style={styles.artistAvatarText}>{video.artists[0].name[0]}</Text>
               </View>
               <View>
-                <Text style={styles.artistName}>{video.artist}</Text>
-                <Text style={styles.artistFollowers}>1.2M followers</Text>
+                <Text style={styles.artistName}>{video.artists[0].name}</Text>
+                <Text style={styles.artistFollowers}>{t('video.moreLikeThis')}</Text>
               </View>
             </TouchableOpacity>
           )}
 
-          {/* Description */}
-          <Text style={styles.descriptionTitle}>Description</Text>
+          <Text style={styles.descriptionTitle}>{t('video.description')}</Text>
           <Text style={styles.description}>{video.description}</Text>
+
+          {subtitles.length > 0 && (
+            <View style={styles.subtitleSection}>
+              <Text style={styles.subtitleTitle}>{t('player.subtitles')}</Text>
+              <View style={styles.subtitleList}>
+                {subtitles.map((subtitle) => (
+                  <View key={subtitle.id} style={styles.subtitleChip}>
+                    <Text style={styles.subtitleText}>{subtitle.label || subtitle.language.toUpperCase()}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
-        {/* Ad Banner */}
         <AdBanner />
 
-        {/* More Like This */}
         <View style={styles.moreLikeThisSection}>
-          <Text style={styles.moreLikeThisTitle}>More Like This</Text>
-          {/* More videos list */}
+          <Text style={styles.moreLikeThisTitle}>{t('video.moreLikeThis')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {recommended.map((item) => (
+              <View key={item.id} style={{ marginRight: spacing.md }}>
+                <VideoCard video={item} onPress={() => navigation.push('VideoDetail', { videoId: item.id, video: item })} />
+              </View>
+            ))}
+            {recommended.length === 0 && (
+              <EmptyState icon="🤔" title={t('search.noResults')} message="" />
+            )}
+          </ScrollView>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,6 +353,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  iconButtonActive: {
+    backgroundColor: colors.primary,
+  },
   artistContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,6 +404,31 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.text,
     marginBottom: spacing.md,
+  },
+  subtitleSection: {
+    marginBottom: spacing.lg,
+  },
+  subtitleTitle: {
+    ...typography.h4,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  subtitleList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  subtitleChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  subtitleText: {
+    ...typography.bodySmall,
+    color: colors.text,
   },
 });
 

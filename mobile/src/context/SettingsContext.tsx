@@ -5,6 +5,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import i18n from '../i18n';
+import { useLibraryStore } from '../store/useLibraryStore';
+
 export interface SubtitleSettings {
   enabled: boolean;
   fontSize: number; // 12-24
@@ -66,6 +69,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    i18n.changeLanguage(settings.app.language).catch((error) => console.warn('Language change failed', error));
+    useLibraryStore.getState().setLanguage(settings.app.language);
+  }, [settings.app.language]);
 
   const loadSettings = async () => {
     try {
@@ -135,6 +143,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       app: { ...settings.app, ...appSettings },
     };
     await saveSettings(newSettings);
+    if (appSettings.language) {
+      i18n.changeLanguage(appSettings.language).catch((error) => console.warn('Language change failed', error));
+      useLibraryStore.getState().setLanguage(appSettings.language);
+    }
   };
 
   const syncSettings = async () => {

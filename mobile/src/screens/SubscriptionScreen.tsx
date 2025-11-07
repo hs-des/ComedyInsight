@@ -1,4 +1,372 @@
 /**
+ * SubscriptionScreen - Subscription management with RevenueCat offerings
+ */
+
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+
+import { colors, typography, spacing, borderRadius } from '../theme';
+import { useMonetizationStore } from '../store/useMonetizationStore';
+
+interface SubscriptionScreenProps {
+  navigation: any;
+}
+
+export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = () => {
+  const { t } = useTranslation();
+  const offerings = useMonetizationStore((state) => state.offerings);
+  const isPremium = useMonetizationStore((state) => state.isPremium);
+  const purchase = useMonetizationStore((state) => state.purchase);
+  const refreshOfferings = useMonetizationStore((state) => state.refreshOfferings);
+  const refreshCustomerInfo = useMonetizationStore((state) => state.refreshCustomerInfo);
+  const loading = useMonetizationStore((state) => state.loading);
+
+  const handlePurchase = async (identifier: string) => {
+    const pkg = offerings?.availablePackages.find((item) => item.identifier === identifier);
+    if (!pkg) return;
+    try {
+      await purchase(pkg);
+      Alert.alert('Success', 'Subscription activated');
+    } catch (error) {
+      Alert.alert('Purchase failed', 'Unable to complete subscription');
+    }
+  };
+
+  const handleRestore = async () => {
+    await refreshCustomerInfo();
+    Alert.alert('Restored', 'Purchase history refreshed');
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('subscription.title')}</Text>
+          <Text style={styles.subtitle}>
+            {isPremium ? 'Premium access active' : 'Upgrade to unlock ad-free comedy specials.'}
+          </Text>
+        </View>
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleRestore}>
+            <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={refreshOfferings}>
+            <Text style={styles.secondaryButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        )}
+
+        {(offerings?.availablePackages || []).map((pkg) => (
+          <View key={pkg.identifier} style={styles.planCard}>
+            <View style={styles.planHeader}>
+              <View>
+                <Text style={styles.planName}>{pkg.product.title}</Text>
+                <Text style={styles.planPeriod}>{pkg.product.description}</Text>
+              </View>
+              <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.subscribeButton}
+              onPress={() => handlePurchase(pkg.identifier)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.subscribeButtonText}>
+                {isPremium ? t('subscription.manage') : t('subscription.subscribe')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {!offerings?.availablePackages?.length && !loading && (
+          <View style={styles.loadingRow}>
+            <Text style={styles.subtitle}>No plans available. Pull to refresh or try again later.</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text,
+  },
+  subtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  loadingRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  planCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  planHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  planName: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  planPeriod: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  planPrice: {
+    ...typography.h3,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  subscribeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  subscribeButtonText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+});
+/**
+ * SubscriptionScreen - Subscription management with RevenueCat offerings
+ */
+
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+
+import { colors, typography, spacing, borderRadius } from '../theme';
+import { useMonetizationStore } from '../store/useMonetizationStore';
+
+interface SubscriptionScreenProps {
+  navigation: any;
+}
+
+export const SubscriptionScreen: React.FC<SubscriptionScreenProps> = () => {
+  const { t } = useTranslation();
+  const offerings = useMonetizationStore((state) => state.offerings);
+  const isPremium = useMonetizationStore((state) => state.isPremium);
+  const purchase = useMonetizationStore((state) => state.purchase);
+  const refreshOfferings = useMonetizationStore((state) => state.refreshOfferings);
+  const refreshCustomerInfo = useMonetizationStore((state) => state.refreshCustomerInfo);
+  const loading = useMonetizationStore((state) => state.loading);
+
+  const handlePurchase = async (identifier: string) => {
+    const pkg = offerings?.availablePackages.find((item) => item.identifier === identifier);
+    if (!pkg) return;
+    try {
+      await purchase(pkg);
+      Alert.alert('Success', 'Subscription activated');
+    } catch (error) {
+      Alert.alert('Purchase failed', 'Unable to complete subscription');
+    }
+  };
+
+  const handleRestore = async () => {
+    await refreshCustomerInfo();
+    Alert.alert('Restored', 'Purchase history refreshed');
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('subscription.title')}</Text>
+          <Text style={styles.subtitle}>
+            {isPremium ? 'Premium access active' : 'Upgrade to unlock ad-free comedy specials.'}
+          </Text>
+        </View>
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleRestore}>
+            <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={refreshOfferings}>
+            <Text style={styles.secondaryButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        )}
+
+        {(offerings?.availablePackages || []).map((pkg) => (
+          <View key={pkg.identifier} style={styles.planCard}>
+            <View style={styles.planHeader}>
+              <View>
+                <Text style={styles.planName}>{pkg.product.title}</Text>
+                <Text style={styles.planPeriod}>{pkg.product.description}</Text>
+              </View>
+              <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.subscribeButton}
+              onPress={() => handlePurchase(pkg.identifier)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.subscribeButtonText}>
+                {isPremium ? t('subscription.manage') : t('subscription.subscribe')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {!offerings?.availablePackages?.length && !loading && (
+          <View style={styles.loadingRow}>
+            <Text style={styles.subtitle}>No plans available. Pull to refresh or try again later.</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text,
+  },
+  subtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  loadingRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  planCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  planHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  planName: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  planPeriod: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+  planPrice: {
+    ...typography.h3,
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  subscribeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  subscribeButtonText: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+});
+/**
  * SubscriptionScreen - Subscription management
  */
 

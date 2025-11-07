@@ -2,17 +2,7 @@
  * Mock Data for Development
  */
 
-export interface Video {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  visible_view_count: number;
-  duration_seconds?: number;
-  language?: string;
-  rating?: number;
-  artist?: string;
-  is_premium?: boolean;
-}
+import type { Video } from '../types/content';
 
 export const mockVideos: Video[] = [
   {
@@ -23,7 +13,7 @@ export const mockVideos: Video[] = [
     duration_seconds: 3600,
     language: 'EN',
     rating: 4.5,
-    artist: 'John Comedian',
+    artists: [{ id: 'a1', name: 'John Comedian' }],
     is_premium: false,
   },
   {
@@ -34,7 +24,7 @@ export const mockVideos: Video[] = [
     duration_seconds: 1800,
     language: 'EN',
     rating: 4.8,
-    artist: 'Sarah Funny',
+    artists: [{ id: 'a2', name: 'Sarah Funny' }],
     is_premium: true,
   },
   {
@@ -45,7 +35,7 @@ export const mockVideos: Video[] = [
     duration_seconds: 2700,
     language: 'EN',
     rating: 4.2,
-    artist: 'Mike Laughs',
+    artists: [{ id: 'a3', name: 'Mike Laughs' }],
     is_premium: false,
   },
   {
@@ -56,7 +46,7 @@ export const mockVideos: Video[] = [
     duration_seconds: 2400,
     language: 'EN',
     rating: 4.9,
-    artist: 'Various Artists',
+    artists: [{ id: 'a4', name: 'Various Artists' }],
     is_premium: true,
   },
   {
@@ -67,7 +57,7 @@ export const mockVideos: Video[] = [
     duration_seconds: 3600,
     language: 'EN',
     rating: 4.0,
-    artist: 'The Improv Group',
+    artists: [{ id: 'a5', name: 'The Improv Group' }],
     is_premium: false,
   },
   {
@@ -78,7 +68,7 @@ export const mockVideos: Video[] = [
     duration_seconds: 1800,
     language: 'EN',
     rating: 4.3,
-    artist: 'Compilation',
+    artists: [{ id: 'a6', name: 'Compilation' }],
     is_premium: false,
   },
 ];
@@ -92,7 +82,7 @@ export const mockFeaturedVideos: Video[] = [
     duration_seconds: 4200,
     language: 'EN',
     rating: 4.9,
-    artist: 'Top Comedians',
+    artists: [{ id: 'a10', name: 'Top Comedians' }],
     is_premium: true,
   },
   {
@@ -103,7 +93,7 @@ export const mockFeaturedVideos: Video[] = [
     duration_seconds: 10800,
     language: 'EN',
     rating: 4.7,
-    artist: 'Various Artists',
+    artists: [{ id: 'a11', name: 'Various Artists' }],
     is_premium: false,
   },
   {
@@ -114,7 +104,7 @@ export const mockFeaturedVideos: Video[] = [
     duration_seconds: 3600,
     language: 'EN',
     rating: 5.0,
-    artist: 'Elite Comedians',
+    artists: [{ id: 'a12', name: 'Elite Comedians' }],
     is_premium: true,
   },
 ];

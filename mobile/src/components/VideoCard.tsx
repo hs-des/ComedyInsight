@@ -12,7 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { Video } from '../data/mockData';
+import type { Video } from '../types/content';
 
 interface VideoCardProps {
   video: Video;
@@ -23,7 +23,8 @@ interface VideoCardProps {
 const CARD_WIDTH = Dimensions.get('window').width * 0.45;
 
 export const VideoCard: React.FC<VideoCardProps> = ({ video, onPress, width = CARD_WIDTH }) => {
-  const formatViews = (count: number): string => {
+  const formatViews = (count?: number): string => {
+    if (typeof count !== 'number') return '';
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M views`;
     } else if (count >= 1000) {
@@ -91,7 +92,9 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video, onPress, width = CA
         </Text>
 
         <View style={styles.metaRow}>
-          <Text style={styles.views}>{formatViews(video.visible_view_count)}</Text>
+          {video.visible_view_count !== undefined && (
+            <Text style={styles.views}>{formatViews(video.visible_view_count)}</Text>
+          )}
           {video.language && (
             <>
               <Text style={styles.separator}>•</Text>
