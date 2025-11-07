@@ -9,8 +9,8 @@ from fastapi import HTTPException, status
 from twilio.base.exceptions import TwilioException
 from twilio.rest import Client as TwilioClient
 
-from .models import SettingsVersion
-from .services import latest_settings, decrypt_settings
+from models import SettingsVersion
+from services import latest_settings, decrypt_settings
 
 
 @dataclass

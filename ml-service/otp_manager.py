@@ -7,10 +7,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .config import get_settings
-from .models import PhoneOTP
-from .otp_utils import generate_code, generate_salt, hash_code, verify_code
-from .twilio_service import TwilioOTPService
+from config import get_settings
+from models import PhoneOTP
+from otp_utils import generate_code, generate_salt, hash_code, verify_code
+from twilio_service import TwilioOTPService
 
 settings = get_settings()
 

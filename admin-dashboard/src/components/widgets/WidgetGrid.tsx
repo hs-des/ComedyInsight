@@ -30,7 +30,8 @@ export function WidgetGrid({ rowHeight = 30, margin = [16, 16], padding = [16, 1
 
   const handleLayoutChange = (_layout: GridLayout[], allLayouts: GridLayouts) => {
     Object.entries(allLayouts).forEach(([breakpoint, layout]) => {
-      updateLayouts(breakpoint, layout)
+      const typedLayout = Array.isArray(layout) ? (layout as GridLayout[]) : []
+      updateLayouts(breakpoint, typedLayout)
     })
   }
 

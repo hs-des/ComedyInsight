@@ -7,6 +7,7 @@ import SkeletonBlock from '../common/SkeletonBlock'
 export default function QuickAccessPanel() {
   const { data, isLoading } = useQuickAccess()
   const defaultActions = getQuickActions('/dashboard').slice(0, 3)
+  const frequentActions = (data?.frequentlyUsed ?? defaultActions).filter((action) => Boolean(action.to))
 
   return (
     <div className="glass-panel p-6">
@@ -36,10 +37,10 @@ export default function QuickAccessPanel() {
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Frequent actions</p>
             <div className="flex flex-wrap gap-2">
-              {(data?.frequentlyUsed ?? defaultActions).map((action) => (
+              {frequentActions.map((action) => (
                 <Link
                   key={action.id}
-                  to={action.to}
+                  to={action.to!}
                   className="inline-flex items-center gap-2 rounded-lg border border-gray-700/60 px-3 py-2 text-xs font-medium text-gray-200 transition hover:border-primary/60 hover:text-white"
                 >
                   <ArrowUpRight size={12} />

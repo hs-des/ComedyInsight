@@ -5,9 +5,9 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..dependencies import admin_with_rate_limit
-from ..db import get_db
-from ..schemas import (
+from dependencies import admin_with_rate_limit
+from db import get_db
+from schemas import (
     ApplicationConfig,
     PasswordPolicy,
     SecurityConfig,
@@ -19,7 +19,7 @@ from ..schemas import (
     SettingsTestTwilioRequest,
     TwilioConfig,
 )
-from ..services import (
+from services import (
     backup_payload,
     create_settings_version,
     decrypt_settings,

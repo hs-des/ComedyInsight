@@ -13,10 +13,15 @@ class Settings:
     rate_limit_window: int
 
     def __init__(self) -> None:
-        self.database_url = os.getenv(
+        raw_url = os.getenv(
             "DATABASE_URL",
             "postgresql+asyncpg://postgres:postgres@postgres:5432/comedyinsight",
         )
+        if raw_url.startswith("postgres://"):
+            raw_url = raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif raw_url.startswith("postgresql://") and "+asyncpg" not in raw_url:
+            raw_url = raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        self.database_url = raw_url
 
         key = os.getenv("SETTINGS_ENCRYPTION_KEY")
         if not key:

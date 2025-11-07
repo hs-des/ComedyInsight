@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Layouts } from 'react-grid-layout'
+import type { ChartData } from 'chart.js'
 
 import { BarChart } from '../charts/BarChart'
 import { PieChart } from '../charts/PieChart'
@@ -64,7 +65,7 @@ export function DashboardWidgets() {
           backgroundColor: ['#38bdf8', '#6366f1', '#fbbf24', '#f97316', '#22d3ee'],
         },
       ],
-    }
+    } satisfies ChartData<'doughnut'>
 
     const storageDataset = {
       labels: ['Original media', 'Transcoded outputs', 'Analytics', 'Backups'],

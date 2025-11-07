@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from twilio.base.exceptions import TwilioException
 from twilio.rest import Client as TwilioClient
 
-from .config import get_settings
-from .encryption import decrypt_value, encrypt_value
-from .models import SettingsAuditLog, SettingsVersion
-from .schemas import SettingsPayload
+from config import get_settings
+from encryption import decrypt_value, encrypt_value
+from models import SettingsAuditLog, SettingsVersion
+from schemas import SettingsPayload
 
 settings = get_settings()
 

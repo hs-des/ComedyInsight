@@ -4,11 +4,18 @@ import { ChevronRight } from 'lucide-react'
 import { NAV_LABEL_LOOKUP } from '../../constants/navigation'
 import useMediaQuery from '../../hooks/useMediaQuery'
 
+interface BreadcrumbItem {
+  label: string
+  path: string
+  isLast: boolean
+  isEllipsis?: boolean
+}
+
 export default function Breadcrumbs() {
   const location = useLocation()
   const segments = location.pathname.split('/').filter(Boolean)
   const isMobile = useMediaQuery('(max-width: 640px)')
-  const items = segments.map((segment, index) => {
+  const items: BreadcrumbItem[] = segments.map((segment, index) => {
     const path = `/${segments.slice(0, index + 1).join('/')}`
     return {
       label: NAV_LABEL_LOOKUP[path] || segment.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
@@ -25,7 +32,7 @@ export default function Breadcrumbs() {
     )
   }
 
-  let displayItems = items
+  let displayItems: BreadcrumbItem[] = items
   if (isMobile && items.length > 2) {
     displayItems = [items[0], { ...items[items.length - 2], label: '…', isEllipsis: true }, items[items.length - 1]]
   }

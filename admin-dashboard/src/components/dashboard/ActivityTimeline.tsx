@@ -30,6 +30,9 @@ export default function ActivityTimeline() {
     setPage(1)
   }
 
+  const items = data?.items ?? []
+  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 0
+
   return (
     <div className="glass-panel p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -103,18 +106,18 @@ export default function ActivityTimeline() {
           </div>
         )}
 
-        {!isLoading && data && data.items.length === 0 && (
+        {!isLoading && items.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-700/60 bg-gray-900/40 p-6 text-center text-sm text-gray-400">
             No activity found for the selected filters.
           </div>
         )}
 
-        {!isLoading && data && (
+        {!isLoading && items.length > 0 && (
           <ol className="relative space-y-4">
-            {data.items.map((item, index) => (
+            {items.map((item, index) => (
               <li key={item.id} className="relative pl-6">
                 <span className="absolute left-0 top-1 h-3 w-3 rounded-full border border-primary bg-primary/40" />
-                {index !== data.items.length - 1 && <span className="absolute left-1 top-4 h-full w-px bg-gray-800" />}
+                {index !== items.length - 1 && <span className="absolute left-1 top-4 h-full w-px bg-gray-800" />}
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-white">{item.title}</p>
@@ -141,17 +144,15 @@ export default function ActivityTimeline() {
           <button
             className="rounded-lg border border-gray-700/70 px-3 py-1.5 text-gray-300 transition hover:border-gray-500"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={!data.hasPreviousPage}
+            disabled={!data?.hasPreviousPage}
           >
             Previous
           </button>
-          <span>
-            Page {data.page} of {Math.ceil(data.total / data.pageSize)}
-          </span>
+          <span>Page {data.page} of {totalPages}</span>
           <button
             className="rounded-lg border border-gray-700/70 px-3 py-1.5 text-gray-300 transition hover:border-gray-500"
             onClick={() => setPage((prev) => prev + 1)}
-            disabled={!data.hasNextPage}
+            disabled={!data?.hasNextPage}
           >
             Next
           </button>

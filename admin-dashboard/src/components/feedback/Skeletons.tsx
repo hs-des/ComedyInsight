@@ -1,11 +1,13 @@
+import type { CSSProperties } from 'react'
 import { cn } from '../../utils/cn'
 
 interface SkeletonProps {
   className?: string
+  style?: CSSProperties
 }
 
-export function Skeleton({ className }: SkeletonProps) {
-  return <div className={cn('animate-pulse rounded-md bg-slate-200/60 dark:bg-slate-700/60', className)} />
+export function Skeleton({ className, style }: SkeletonProps) {
+  return <div className={cn('animate-pulse rounded-md bg-slate-200/60 dark:bg-slate-700/60', className)} style={style} />
 }
 
 interface SkeletonTextProps extends SkeletonProps {

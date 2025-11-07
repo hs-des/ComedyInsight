@@ -1,22 +1,19 @@
-import { ReactNode, useMemo } from 'react'
-import { ChartData, ChartOptions } from 'chart.js'
-import { Doughnut, Pie } from 'react-chartjs-2'
+import { type ReactNode, useMemo } from 'react'
+import type { ChartData, ChartOptions } from 'chart.js'
+import { Doughnut } from 'react-chartjs-2'
 
 import { ensureChartDefaults } from './ChartRegistry'
 import { ResponsiveChartContainer } from './ResponsiveChartContainer'
 
 ensureChartDefaults()
 
-type PieVariant = 'pie' | 'doughnut'
-
 interface PieChartProps {
-  data: ChartData<'pie'>
-  options?: ChartOptions<'pie'>
+  data: ChartData<'doughnut'>
+  options?: ChartOptions<'doughnut'>
   title?: string
   subtitle?: string
   actions?: ReactNode
   minHeight?: number
-  variant?: PieVariant
   cutoutPercentage?: number
 }
 
@@ -27,13 +24,13 @@ export function PieChart({
   subtitle,
   actions,
   minHeight,
-  variant = 'doughnut',
   cutoutPercentage = 60,
 }: PieChartProps) {
-  const mergedOptions = useMemo<ChartOptions<'pie'>>(() => {
-    const baseOptions: ChartOptions<'pie'> = {
+  const mergedOptions = useMemo<ChartOptions<'doughnut'>>(() => {
+    const baseOptions: ChartOptions<'doughnut'> = {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: `${cutoutPercentage}%`,
       plugins: {
         legend: {
           display: true,
@@ -43,12 +40,7 @@ export function PieChart({
     }
 
     if (!options) {
-      return variant === 'doughnut'
-        ? {
-            ...baseOptions,
-            cutout: `${cutoutPercentage}%`,
-          }
-        : baseOptions
+      return baseOptions
     }
 
     return {
@@ -58,15 +50,13 @@ export function PieChart({
         ...baseOptions.plugins,
         ...options.plugins,
       },
-      cutout: variant === 'doughnut' ? `${cutoutPercentage}%` : options.cutout,
+      cutout: options.cutout ?? baseOptions.cutout,
     }
-  }, [options, variant, cutoutPercentage])
-
-  const ChartComponent = variant === 'pie' ? Pie : Doughnut
+  }, [options, cutoutPercentage])
 
   return (
     <ResponsiveChartContainer title={title} subtitle={subtitle} actions={actions} minHeight={minHeight}>
-      <ChartComponent data={data} options={mergedOptions} updateMode="resize" className="h-full w-full" />
+      <Doughnut data={data} options={mergedOptions} updateMode="resize" className="h-full w-full" />
     </ResponsiveChartContainer>
   )
 }

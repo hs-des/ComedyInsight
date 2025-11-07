@@ -4,13 +4,43 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { Save, X, AlertCircle, CheckCircle, Image as ImageIcon, Video, Link as LinkIcon } from 'lucide-react'
 
+interface AdFormState {
+  title: string
+  ad_type: string
+  position: string
+  ad_url: string
+  image_url: string
+  video_url: string
+  click_url: string
+  start_date: string
+  end_date: string
+  is_active: boolean
+  max_impressions: string
+  max_clicks: string
+}
+
+interface CreateAdPayload {
+  title: string
+  ad_type: string
+  position: string
+  ad_url: string
+  image_url: string
+  video_url: string
+  click_url: string
+  start_date: string | null
+  end_date: string | null
+  is_active: boolean
+  max_impressions: number | null
+  max_clicks: number | null
+}
+
 export default function AddAdsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AdFormState>({
     title: '',
     ad_type: 'banner',
     position: 'home_top',
@@ -26,8 +56,8 @@ export default function AddAdsPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const response = await axios.post('/api/admin/ads', data)
+    mutationFn: async (payload: CreateAdPayload) => {
+      const response = await axios.post('/api/admin/ads', payload)
       return response.data
     },
     onSuccess: () => {
@@ -52,10 +82,10 @@ export default function AddAdsPage() {
       return
     }
 
-    const submitData = {
+    const submitData: CreateAdPayload = {
       ...formData,
-      max_impressions: formData.max_impressions ? parseInt(formData.max_impressions, 10) : null,
-      max_clicks: formData.max_clicks ? parseInt(formData.max_clicks, 10) : null,
+      max_impressions: formData.max_impressions ? Number.parseInt(formData.max_impressions, 10) || null : null,
+      max_clicks: formData.max_clicks ? Number.parseInt(formData.max_clicks, 10) || null : null,
       start_date: formData.start_date || null,
       end_date: formData.end_date || null,
     }

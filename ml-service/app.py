@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 
-from .db import engine
-from .models import Base
-from .routers.settings import router as settings_router
-from .routers.auth import router as auth_router
-from .routers.files import router as files_router
+from db import engine
+from models import Base
+from routers.settings import router as settings_router
+from routers.auth import router as auth_router
+from routers.files import router as files_router
 
 app = FastAPI(title="ComedyInsight Configuration Service")
 

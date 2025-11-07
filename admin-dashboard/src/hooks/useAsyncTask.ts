@@ -85,7 +85,7 @@ export function useAsyncTask<TResult, TArgs extends unknown[] = []>(
   useEffect(() => {
     mountedRef.current = true
     if (immediate) {
-      void execute()
+      void execute(...([] as unknown as TArgs))
     }
 
     return () => {

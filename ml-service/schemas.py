@@ -14,10 +14,10 @@ class StorageConfig(BaseModel):
 
 
 class TwilioConfig(BaseModel):
-    account_sid: str = Field(..., regex=r"^AC[a-fA-F0-9]{32}$")
+    account_sid: str = Field(..., pattern=r"^AC[a-fA-F0-9]{32}$")
     auth_token: str = Field(..., min_length=16, max_length=128)
-    phone_number: str = Field(..., regex=r"^\+\d{8,15}$")
-    verify_service_sid: Optional[str] = Field(default=None, regex=r"^VA[a-fA-F0-9]{32}$")
+    phone_number: str = Field(..., pattern=r"^\+\d{8,15}$")
+    verify_service_sid: Optional[str] = Field(default=None, pattern=r"^VA[a-fA-F0-9]{32}$")
     otp_template: str = Field(default="Your ComedyInsight verification code is {{code}}")
 
     @validator("otp_template")
@@ -28,7 +28,7 @@ class TwilioConfig(BaseModel):
 
 
 class ApplicationConfig(BaseModel):
-    theme: str = Field(default="dark", regex=r"^(dark|light|system)$")
+    theme: str = Field(default="dark", pattern=r"^(dark|light|system)$")
     language: str = Field(default="en", max_length=8)
     api_timeout: int = Field(default=30, ge=5, le=120)
 
@@ -61,7 +61,7 @@ class SettingsTestStorageRequest(StorageConfig):
 
 
 class SettingsTestTwilioRequest(TwilioConfig):
-    phone_number: str = Field(..., regex=r"^\+\d{8,15}$")
+    phone_number: str = Field(..., pattern=r"^\+\d{8,15}$")
 
 
 class BackupResponse(BaseModel):
@@ -75,18 +75,18 @@ class RestoreRequest(BaseModel):
 
 
 class SendOTPRequest(BaseModel):
-    phone_number: str = Field(..., regex=r"^\+\d{8,15}$")
-    method: str = Field(default="sms", regex=r"^(sms|voice)$")
+    phone_number: str = Field(..., pattern=r"^\+\d{8,15}$")
+    method: str = Field(default="sms", pattern=r"^(sms|voice)$")
 
 
 class VerifyOTPRequest(BaseModel):
-    phone_number: str = Field(..., regex=r"^\+\d{8,15}$")
+    phone_number: str = Field(..., pattern=r"^\+\d{8,15}$")
     code: str = Field(..., min_length=4, max_length=10)
 
 
 class ResendOTPRequest(BaseModel):
-    phone_number: str = Field(..., regex=r"^\+\d{8,15}$")
-    method: Optional[str] = Field(default=None, regex=r"^(sms|voice)$")
+    phone_number: str = Field(..., pattern=r"^\+\d{8,15}$")
+    method: Optional[str] = Field(default=None, pattern=r"^(sms|voice)$")
 
 
 class VerificationStatusResponse(BaseModel):

@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
 interface AuthContextType {
@@ -22,7 +21,7 @@ axios.interceptors.request.use((config) => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<Record<string, unknown> | null>(null)
 
   // Check for existing auth token on mount
   useEffect(() => {

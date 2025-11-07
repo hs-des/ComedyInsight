@@ -8,10 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..dependencies import admin_with_rate_limit
-from ..db import get_db
-from ..models import FileObject
-from ..schemas import (
+from dependencies import admin_with_rate_limit
+from db import get_db
+from models import FileObject
+from schemas import (
     BucketListResponse,
     BucketRequest,
     FileItem,
@@ -20,7 +20,7 @@ from ..schemas import (
     UploadFileRequest,
     UploadFileResponse,
 )
-from ..storage_service import StorageService
+from storage_service import StorageService
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 

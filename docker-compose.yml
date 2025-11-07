@@ -72,14 +72,14 @@ services:
     container_name: comedyinsight-minio
     restart: unless-stopped
     profiles: ["dev", "prod"]
-    command: server /data --console-address "9001"
+    command: server /data --console-address ":9001"
     env_file: .env
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000"
-      - "9001"
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
       - ./scripts/healthchecks:/opt/healthchecks:ro

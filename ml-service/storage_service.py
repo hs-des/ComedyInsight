@@ -12,8 +12,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import FileObject, SettingsVersion
-from .services import decrypt_settings, latest_settings
+from models import FileObject, SettingsVersion
+from services import decrypt_settings, latest_settings
 
 
 @dataclass

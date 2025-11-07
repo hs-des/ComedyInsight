@@ -5,7 +5,7 @@ from typing import Dict
 
 from fastapi import Depends, HTTPException, Request, status
 
-from .config import get_settings
+from config import get_settings
 
 settings = get_settings()
 

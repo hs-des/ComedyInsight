@@ -6,7 +6,7 @@ from typing import Optional
 
 from cryptography.fernet import Fernet
 
-from .config import get_settings
+from config import get_settings
 
 
 @lru_cache

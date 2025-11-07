@@ -13,6 +13,7 @@ interface WidgetSettingsPanelProps {
 type SettingValue = string | number | boolean | Record<string, unknown>
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+const isPrimitive = (value: unknown): value is string | number | boolean => ['string', 'number', 'boolean'].includes(typeof value)
 
 export function WidgetSettingsPanel({ widget, open, onClose, onSaveSettings, onToggleVisibility }: WidgetSettingsPanelProps) {
   const [draftSettings, setDraftSettings] = useState<Record<string, SettingValue>>({})
@@ -22,7 +23,13 @@ export function WidgetSettingsPanel({ widget, open, onClose, onSaveSettings, onT
   useEffect(() => {
     if (!widget) return
 
-    setDraftSettings({ ...widget.settings })
+    const sanitized: Record<string, SettingValue> = {}
+    Object.entries(widget.settings).forEach(([key, value]) => {
+      if (isPrimitive(value) || isObject(value)) {
+        sanitized[key] = value
+      }
+    })
+    setDraftSettings(sanitized)
     const customSettings = Object.entries(widget.settings).filter(([, value]) => isObject(value))
     setRawJson(customSettings.length ? JSON.stringify(Object.fromEntries(customSettings), null, 2) : '{}')
     setJsonError(null)
@@ -30,7 +37,7 @@ export function WidgetSettingsPanel({ widget, open, onClose, onSaveSettings, onT
 
   const simpleFields = useMemo(() => {
     if (!widget) return [] as Array<[string, SettingValue]>
-    return Object.entries(widget.settings).filter(([, value]) => !isObject(value)) as Array<[string, SettingValue]>
+    return Object.entries(widget.settings).filter(([, value]) => isPrimitive(value)) as Array<[string, SettingValue]>
   }, [widget])
 
   if (!widget) return null
@@ -48,10 +55,13 @@ export function WidgetSettingsPanel({ widget, open, onClose, onSaveSettings, onT
       }
     }
 
-    const mergedSettings = {
-      ...draftSettings,
-      ...parsedJson,
-    }
+    const mergedSettings: Record<string, SettingValue> = { ...draftSettings }
+    Object.entries(parsedJson).forEach(([key, value]) => {
+      if (isPrimitive(value) || isObject(value)) {
+        mergedSettings[key] = value
+      }
+    })
+
     onSaveSettings(widget.id, mergedSettings)
     onClose()
   }

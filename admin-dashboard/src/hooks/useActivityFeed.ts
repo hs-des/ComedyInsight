@@ -48,7 +48,6 @@ export const useActivityFeed = (params: Params) =>
       const { data } = await axios.get<ActivityFeedResponse>(url)
       return data
     },
-    keepPreviousData: true,
     refetchInterval: 45_000,
   })
 

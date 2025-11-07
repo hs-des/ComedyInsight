@@ -24,7 +24,6 @@ import AddAdsPage from './pages/AddAdsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import AuditLogsPage from './pages/AuditLogsPage'
 import ProtectedRoute from './components/ProtectedRoute'
-import Layout from './components/Layout'
 import SettingsPage from './pages/SettingsPage'
 import FilesPage from './pages/FilesPage'
 import NotificationCenter from './components/common/NotificationCenter'
@@ -42,13 +41,7 @@ function App() {
             <NotificationCenter />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
+            <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/videos" element={<VideosPage />} />

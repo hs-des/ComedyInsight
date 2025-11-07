@@ -56,10 +56,11 @@ const deserialize = (): WidgetState[] | null => {
   }
 }
 
-const coerceLayouts = (layouts: Layouts, widgetId: string, minW?: number, minH?: number): Layouts => {
+const coerceLayouts = (layouts: Layouts | undefined, widgetId: string, minW?: number, minH?: number): Layouts => {
   const next: Layouts = {}
   Object.entries(layouts ?? {}).forEach(([breakpoint, layoutArray]) => {
-    next[breakpoint] = layoutArray.map((layout) => ({
+    const typedLayouts = Array.isArray(layoutArray) ? (layoutArray as Layout[]) : []
+    next[breakpoint] = typedLayouts.map((layout) => ({
       ...layout,
       i: widgetId,
       minW: minW ?? layout.minW,
@@ -94,12 +95,13 @@ const deriveLayouts = (widgets: WidgetInstance[]): Layouts => {
 
   widgets.forEach((widget) => {
     Object.entries(widget.layouts ?? {}).forEach(([breakpoint, layoutArray]) => {
+      const typedLayouts = Array.isArray(layoutArray) ? (layoutArray as Layout[]) : []
       if (!layouts[breakpoint]) {
         layouts[breakpoint] = []
       }
       if (widget.visible) {
         layouts[breakpoint]!.push(
-          ...layoutArray.map((layout) => ({
+          ...typedLayouts.map((layout) => ({
             ...layout,
             i: widget.id,
             minW: widget.minW ?? layout.minW,
@@ -149,7 +151,7 @@ export function WidgetLayoutProvider({ definitions, children }: WidgetLayoutProv
           const widgetLayout = nextLayout.find((layout) => layout.i === state.id)
           if (!widgetLayout) return state
 
-          const breakpointLayouts = state.layouts[breakpoint] ?? []
+          const breakpointLayouts = (state.layouts[breakpoint] ?? []) as Layout[]
           const merged = breakpointLayouts.map((layout) => (layout.i === state.id ? { ...layout, ...widgetLayout } : layout))
 
           const hasExisting = breakpointLayouts.some((layout) => layout.i === state.id)

@@ -5,12 +5,12 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import get_settings
-from ..dependencies import otp_rate_limit
-from ..db import get_db
-from ..models import PhoneOTP
-from ..otp_manager import resend_otp, send_otp, verification_status, verify_otp
-from ..schemas import (
+from config import get_settings
+from dependencies import otp_rate_limit
+from db import get_db
+from models import PhoneOTP
+from otp_manager import resend_otp, send_otp, verification_status, verify_otp
+from schemas import (
     ResendOTPRequest,
     SendOTPRequest,
     VerificationStatusResponse,
